@@ -51,7 +51,7 @@ void PLoc_Sparse (double **Lk,
     if(gDofID[i] < 0){
       continue;
     }
-    if (system->isLocalRow(gDofID[i])) {
+    if (system->isLocal(gDofID[i])) {
       rows[nrows++] = i;
       cols[ncols++] = i;
     } else {
@@ -66,21 +66,21 @@ void PLoc_Sparse (double **Lk,
   }
 
   /* Allocate the rows, columns, and values */
-  SparseSystem::sp_idx *row_idx, *n_cols, *col_idx;
+  SparseSystem::Index *row_idx, *n_cols, *col_idx;
   double *values;
   if(nrows > 0){
-    row_idx = PGFEM_calloc(SparseSystem::sp_idx, nrows);
-    n_cols = PGFEM_calloc(SparseSystem::sp_idx, nrows); 
+    row_idx = PGFEM_calloc(SparseSystem::Index, nrows);
+    n_cols = PGFEM_calloc(SparseSystem::Index, nrows);
   } else {
-    row_idx = PGFEM_calloc(SparseSystem::sp_idx, 1);
-    n_cols = PGFEM_calloc(SparseSystem::sp_idx, 1);
+    row_idx = PGFEM_calloc(SparseSystem::Index, 1);
+    n_cols = PGFEM_calloc(SparseSystem::Index, 1);
   }
 
   if((ncols > 0) && (nrows >0)){
-    col_idx = PGFEM_calloc(SparseSystem::sp_idx, nrows*ncols);
+    col_idx = PGFEM_calloc(SparseSystem::Index, nrows*ncols);
     values = aloc1(nrows*ncols);
   } else {
-    col_idx = PGFEM_calloc(SparseSystem::sp_idx, 1); 
+    col_idx = PGFEM_calloc(SparseSystem::Index, 1);
     values = aloc1(1);
   }
 
@@ -215,7 +215,7 @@ void PLoc_Sparse_rec (double **Lk,
       continue; /* BC */
     }
 
-    if (system->isLocalRow(G_row_id[i])) {
+    if (system->isLocal(G_row_id[i])) {
       rows[nrows++] = i;
     }
     else {
@@ -233,21 +233,21 @@ void PLoc_Sparse_rec (double **Lk,
   /* now we know how many rows/columns to keep/send and what index
      they belong to. Now allocate space for the row and column values
      noting that the local matrix is dense. */
-  SparseSystem::sp_idx *row_idx, *n_cols, *col_idx;
+  SparseSystem::Index *row_idx, *n_cols, *col_idx;
   double *values;
   if(nrows > 0){
-    row_idx = PGFEM_calloc(SparseSystem::sp_idx, nrows); 
-    n_cols = PGFEM_calloc(SparseSystem::sp_idx, nrows);
+    row_idx = PGFEM_calloc(SparseSystem::Index, nrows);
+    n_cols = PGFEM_calloc(SparseSystem::Index, nrows);
   } else {
-    row_idx = PGFEM_calloc(SparseSystem::sp_idx, 1); 
-    n_cols = PGFEM_calloc(SparseSystem::sp_idx, 1); 
+    row_idx = PGFEM_calloc(SparseSystem::Index, 1);
+    n_cols = PGFEM_calloc(SparseSystem::Index, 1);
   }
 
   if( (ncols > 0) && (nrows > 0)){
-    col_idx = PGFEM_calloc(SparseSystem::sp_idx, nrows*ncols);
+    col_idx = PGFEM_calloc(SparseSystem::Index, nrows*ncols);
     values = aloc1(nrows*ncols);
   } else {
-    col_idx = PGFEM_calloc(SparseSystem::sp_idx, 1); 
+    col_idx = PGFEM_calloc(SparseSystem::Index, 1);
     values = aloc1(1);
   }
 

@@ -22,9 +22,15 @@ using pgfem3d::PGFEM_Abort;
 using pgfem3d::solvers::SparseSystem;
 using namespace pgfem3d::solvers::hypre;
 
-Hypre::Hypre(const PGFem3D_opt& opts, MPI_Comm comm, const int Ap[],
-             const Ai_t Ai[], const long rowsPerProc[], long maxit, double err)
-    : SparseSystem(),
+Hypre::Hypre(const PGFem3D_opt& opts,
+             MPI_Comm comm,
+             const int Ap[],
+             const Index Ai[],
+             Index iMin,
+             Index iMax,
+             long maxit,
+             double err)
+    : SparseSystem(iMin, iMax),
       _comm(comm),
       _Ai(Ai)
 {
@@ -41,17 +47,12 @@ Hypre::Hypre(const PGFem3D_opt& opts, MPI_Comm comm, const int Ap[],
                  "Max. It. = %d\n", opts.kdim, opts.maxit);
   }
 
-  const auto rows = rowsPerProc[rank];
+  auto rows = nRows();
   _gRows = new HYPRE_t[rows];
   _nCols = new HYPRE_t[rows];
 
-  // Prefix sum to find the index of my first row, and then compute the end of
-  // my closed interval range.
-  _ilower = std::accumulate(rowsPerProc, rowsPerProc + rank, 0);
-  _iupper = _ilower + rows - 1;
-
-  // Generate the rows that we own (dense integer range starting at _ilower)
-  std::iota(_gRows, _gRows + rows, _ilower);    // ksaha
+  // Generate the rows that we own (dense integer range starting at ilower())
+  std::iota(_gRows, _gRows + rows, ilower());    // ksaha
 
   // Record the number of non-zero columns in each of the rows.
   for (long i = 0, e = rows; i < e; ++i) {
@@ -59,7 +60,7 @@ Hypre::Hypre(const PGFem3D_opt& opts, MPI_Comm comm, const int Ap[],
   }
 
   // Create the matrix.
-  HYPRE_IJMatrixCreate(_comm, _ilower, _iupper, _ilower, _iupper, &_k);
+  HYPRE_IJMatrixCreate(_comm, ilower(), iupper(), ilower(), iupper(), &_k);
   HYPRE_IJMatrixSetObjectType(_k, HYPRE_PARCSR);
   HYPRE_IJMatrixSetRowSizes(_k, _nCols);
 
@@ -75,7 +76,7 @@ Hypre::Hypre(const PGFem3D_opt& opts, MPI_Comm comm, const int Ap[],
   //     incremented in the inner loop.
   for (long i = 0, n = 0, e = rows; i < e; ++i) {
     for (HYPRE_t j = 0, e = _nCols[i]; j < e; ++j, ++n) {
-      diag[i] += (isLocalRow(Ai[n])) ? 1 : 0;
+      diag[i] += (isLocal(Ai[n])) ? 1 : 0;
     }
     offd[i] = _nCols[i] - diag[i];
   }
@@ -96,11 +97,11 @@ Hypre::Hypre(const PGFem3D_opt& opts, MPI_Comm comm, const int Ap[],
     HYPRE_IJMatrixInitialize(_k);
   }
 
-  HYPRE_IJVectorCreate(_comm, _ilower, _iupper, &_rhs);
+  HYPRE_IJVectorCreate(_comm, ilower(), iupper(), &_rhs);
   HYPRE_IJVectorSetObjectType(_rhs, HYPRE_PARCSR);
   HYPRE_IJVectorInitialize(_rhs);
 
-  HYPRE_IJVectorCreate(_comm, _ilower, _iupper, &_solution);
+  HYPRE_IJVectorCreate(_comm, ilower(), iupper(), &_solution);
   HYPRE_IJVectorSetObjectType(_solution, HYPRE_PARCSR);
   HYPRE_IJVectorInitialize(_solution);
 
@@ -129,7 +130,7 @@ Hypre::assemble()
 }
 
 void
-Hypre::add(int nrows, sp_idx ncols[], sp_idx const rids[], const sp_idx cids[],
+Hypre::add(int nrows, Index ncols[], Index const rids[], const Index cids[],
            const double vals[])
 {
   HYPRE_IJMatrixAddToValues(_k, nrows, (HYPRE_t *) ncols, (HYPRE_t *) rids, (HYPRE_t *) cids, vals);
@@ -140,12 +141,6 @@ Hypre::resetPreconditioner()
 {
   assert(_preconditioner);
   _preconditioner->reset();
-}
-
-bool
-Hypre::isLocalRow(Ai_t i) const
-{
-  return (_ilower <= i and i < _iupper + 1);
 }
 
 void
@@ -210,7 +205,7 @@ Hypre::set(double val)
 {
   HYPRE_Int cols[1] = {1};
 
-  for(int i = 0, e = (_iupper - _ilower + 1), n = 0; i < e; ++i) {
+  for(int i = 0, e = (iupper() - ilower() + 1), n = 0; i < e; ++i) {
     for(HYPRE_t j = 0, e = _nCols[i]; j < e; ++j, ++n) {
       HYPRE_IJMatrixSetValues(_k, 1, cols, &_gRows[i], (HYPRE_t *) &_Ai[n], &val);
     }
@@ -231,9 +226,9 @@ Hypre::printWithRHS(std::string&& basename, const double rhs[], int ndofd,
 
   std::ofstream os;
   os.open(filename.str());
-  os << _ilower << " " << _iupper << "\n";
+  os << ilower() << " " << iupper() << "\n";
   for (int i = 0; i < ndofd; ++i) {
-    os << _ilower + i << " " << rhs[i] << "\n";
+    os << ilower() + i << " " << rhs[i] << "\n";
   }
   os.close();
 }

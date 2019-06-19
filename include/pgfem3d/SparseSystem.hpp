@@ -17,22 +17,25 @@ namespace solvers {
 class SparseSystem
 {
  public:
-
-  using sp_idx = Ai_t;
+  using Index = Ai_t;
 
   static SparseSystem* Create(const PGFem3D_opt& opts,
-			      const pgfem3d::net::PGFem3D_Comm comm,
-                              const int Ap[], const Ai_t Ai[],
-                              const long rowsPerProc[], long maxit, double err);
+                              pgfem3d::net::Network& net,
+                              pgfem3d::net::PGFem3D_Comm comm,
+                              const int Ap[],
+                              const Index Ai[],
+                              const long rowsPerProc[],
+                              long maxit,
+                              double err);
 
   virtual ~SparseSystem();
 
   /// Assemble the matrix.
   virtual void assemble() = 0;
- 
+
   /// Add partial sums to values.
-  virtual void add(int nrows, sp_idx ncols[], sp_idx const rids[], const sp_idx cids[],
-                  const double vals[]) = 0;
+  virtual void add(int nrows, Index ncols[], Index const rids[], const Index cids[],
+                   const double vals[]) = 0;
 
   /// Reset the preconditioner.
   virtual void resetPreconditioner() = 0;
@@ -41,7 +44,13 @@ class SparseSystem
   ///
   /// @param i          The global row index to check.
   /// @returns          TRUE if the row is local, FALSE otherwise.
-  virtual bool isLocalRow(Ai_t i) const = 0;
+  bool isLocal(Index i) const {
+    return (iMin_ <= i and i < iMax_);
+  }
+
+  auto nRows() const {
+    return iMax_ - iMin_;
+  }
 
   /// Zero the underlying matrix data.
   virtual void zero() = 0;
@@ -61,6 +70,13 @@ class SparseSystem
                                     const int iter,
                                     const long *DomDof,
                                     SOLVER_INFO *info) = 0;
+
+ protected:
+  SparseSystem(Index iMin, Index iMax) : iMin_(iMin), iMax_(iMax) {
+  }
+
+  Index iMin_ = 0;
+  Index iMax_ = 0;
 };
 }
 }

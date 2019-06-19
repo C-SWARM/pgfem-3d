@@ -351,12 +351,13 @@ void MultiscaleCommon::build_common(const CommunicationStructure *com,
   spc->build_fast_maps(ndofd, DomDof[rank], GDof);
 
   SOLVER = pgfem3d::solvers::SparseSystem::Create(*opts,
-                          comm,
-                          Ap,
-                          Ai,
-                          DomDof,
-                          opts->maxit,
-                          lin_err);
+                                                  *net,
+                                                  comm,
+                                                  Ap,
+                                                  Ai,
+                                                  DomDof,
+                                                  opts->maxit,
+                                                  lin_err);
 
   if (!supports->multi_scale) {
     VVolume = T_VOLUME (ne,ndim,elem,node);
