@@ -26,7 +26,7 @@ SparseSystem::Create(const PGFem3D_opt& opts,
                      const int Ap[],
                      const Index Ai[],
                      const long rowsPerProc[],
-                     long maxit,
+                     int maxit,
                      double err)
 {
   auto procs = net.size(comm);

@@ -28,7 +28,7 @@ Hypre::Hypre(const PGFem3D_opt& opts,
              const Index Ai[],
              Index iMin,
              Index iMax,
-             long maxit,
+             int maxit,
              double err)
     : SparseSystem(iMin, iMax),
       _comm(comm),

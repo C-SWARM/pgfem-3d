@@ -25,7 +25,7 @@ class SparseSystem
                               const int Ap[],
                               const Index Ai[],
                               const long rowsPerProc[],
-                              long maxit,
+                              int maxit,
                               double err);
 
   virtual ~SparseSystem();

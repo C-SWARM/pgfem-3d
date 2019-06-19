@@ -97,7 +97,7 @@ struct Hypre : public SparseSystem
   /// @param maxit       The maximum number of iterations.
   /// @param err         The error tolerance used during solving.
   Hypre(const PGFem3D_opt& options, MPI_Comm comm, const int Ap[],
-        const Index Ai[], Index iMin, Index iMax, long maxit, double err);
+        const Index Ai[], Index iMin, Index iMax, int maxit, double err);
 
   ~Hypre();
 
