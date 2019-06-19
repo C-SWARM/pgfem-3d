@@ -38,7 +38,7 @@ typedef void* PGFem3D_Comm;
 typedef void* datatype_t;
 typedef void* op_t;
 #endif
-  
+
 #ifdef HAVE_PGFEM_MPI
 // MPI compatibility
 #define NET_ANY_SOURCE    MPI_ANY_SOURCE
@@ -63,7 +63,7 @@ typedef void* op_t;
 #endif
 
 #define NET_STATUS_IGNORE ((pgfem3d::net::Status*) 0)
-  
+
 extern datatype_t datatype_byte;
 extern datatype_t datatype_char;
 extern datatype_t datatype_int;
@@ -89,15 +89,15 @@ extern op_t op_bor;
 #define NET_OP_BOR ((op_t) (op_bor))
 
 extern PGFem3D_Comm NET_COMM_WORLD;
-  
-// Make CIDs 8 byte values 
+
+// Make CIDs 8 byte values
 typedef uint64_t CID;
 
 typedef struct key_t {
   uint64_t key0;
   uint64_t key1;
 } Key;  // XXX (refactor)
-  
+
 typedef struct net_buffer_t {
   uintptr_t addr;
   size_t size;
@@ -119,7 +119,7 @@ protected:
   bool _allocated;
   int _idx;
 };
-  
+
 class Request : public NetworkObject {};
 class Status : public NetworkObject
 {
@@ -136,12 +136,12 @@ public:
 class Network {
 public:
   static Network* Create(const PGFem3D_opt& opts);
-  
+
   virtual ~Network();
 
   // get the type of Network configured by PGFem3D
   virtual int type() const = 0;
-  
+
   virtual int initialized() = 0;
   virtual void finalize() = 0;
   virtual void abort(PGFem3D_Comm comm, int code) = 0;
@@ -154,45 +154,57 @@ public:
   virtual void comm_split(PGFem3D_Comm comm, int color, int key, PGFem3D_Comm *ncomm) = 0;
   virtual void comm_free(PGFem3D_Comm *comm) = 0;
   virtual void comm_dup(PGFem3D_Comm comm, PGFem3D_Comm *ncomm) = 0;
-  
+
   virtual void pin(const void *addr, const size_t bytes, Key *key) = 0;
   virtual void unpin(const void *addr, const size_t bytes) = 0;
-  
+
   virtual void barrier(PGFem3D_Comm comm) = 0;
   virtual void bcast(void *in, int count, datatype_t dt, int root, PGFem3D_Comm comm) = 0;
   virtual void reduce(const void *in, void *out, int count, datatype_t dt, op_t op,
-		      int root, PGFem3D_Comm comm) = 0;
+              int root, PGFem3D_Comm comm) = 0;
   virtual void gather(const void *in, int scount, datatype_t sdt, void *out,
-		      int rcount, datatype_t rdt, int root, PGFem3D_Comm comm) = 0;
+              int rcount, datatype_t rdt, int root, PGFem3D_Comm comm) = 0;
   virtual void allreduce(const void *in, void *out, int count, datatype_t dt,
-			 op_t op, PGFem3D_Comm comm) = 0;
+             op_t op, PGFem3D_Comm comm) = 0;
   virtual void allgather(const void *in, int scount, datatype_t sdt,
-			 void *out, int rcount, datatype_t rdt, PGFem3D_Comm comm) = 0;
+             void *out, int rcount, datatype_t rdt, PGFem3D_Comm comm) = 0;
   virtual void allgatherv(const void *in, int scount, datatype_t sdt,
-			  void *out, int *rcounts, const int *dipls,
-			  datatype_t rdt, PGFem3D_Comm comm) = 0;
+              void *out, int *rcounts, const int *dipls,
+              datatype_t rdt, PGFem3D_Comm comm) = 0;
+
+  int rank(PGFem3D_Comm comm) {
+    int rank = 0;
+    comm_rank(comm, &rank);
+    return rank;
+  }
+
+  int size(PGFem3D_Comm comm) {
+    int size = 0;
+    comm_size(comm, &size);
+    return size;
+  }
 };
 
 class ISIRNetwork : public Network {
 public:
   virtual void isend(const void *buf, int count, datatype_t dt, int dest, int tag,
-		     PGFem3D_Comm comm, Request *request) = 0;
+             PGFem3D_Comm comm, Request *request) = 0;
   virtual void irecv(void *buf, int count, datatype_t dt,
-		     int source, int tag, PGFem3D_Comm comm, Request *request) = 0;
+             int source, int tag, PGFem3D_Comm comm, Request *request) = 0;
   virtual void send(const void *buf, int count, datatype_t dt, int dest, int tag,
-		    PGFem3D_Comm comm) = 0;
+            PGFem3D_Comm comm) = 0;
   virtual void recv(void *buf, int count, datatype_t dt,
-		    int source, int tag, PGFem3D_Comm comm, Status *status) = 0;
+            int source, int tag, PGFem3D_Comm comm, Status *status) = 0;
   virtual void wait(Request *req, Status *status) = 0;
   virtual void waitall(int count, Request *requests,
-		       Status *statuses) = 0;
+               Status *statuses) = 0;
   virtual void waitany(int count, Request *requests, int *indx,
-		       Status *status) = 0;
+               Status *status) = 0;
   virtual void waitsome(int incount, Request *requests,
-			int *outcount, int array_of_indices[],
-			Status *statuses) = 0;
+            int *outcount, int array_of_indices[],
+            Status *statuses) = 0;
   virtual void iprobe(int source, int tag, PGFem3D_Comm comm, int *flag,
-		      Status *status) = 0;
+              Status *status) = 0;
   virtual void probe(int source, int tag, PGFem3D_Comm comm, Status *status) = 0;
   virtual void test(Request *req, int *flag, Status *status) = 0;
   virtual void get_status_count(const Status *status, datatype_t dt, int *count) = 0;
@@ -202,15 +214,15 @@ public:
 class PWCNetwork : public Network {
 public:
   virtual void pwc(int dst, size_t n, Buffer *lbuf, Buffer *rbuf,
-		   const CID& lid, const CID& rid) = 0;
+           const CID& lid, const CID& rid) = 0;
   virtual void gwc(int src, size_t n, Buffer *lbuf, Buffer *rbuf,
-		   const CID& lid, const CID& rid) = 0;
+           const CID& lid, const CID& rid) = 0;
   virtual void probe(int *flag, CID *comp, Status *status, void (*cb)(CID)) = 0;
   virtual void progress(int *flag, CID *comp, Status *status, void (cb)(CID)) = 0;
   virtual void wait_n(int count) = 0;
   virtual void wait_n_id(int count, const CID& id) = 0;
   virtual void probe_n(int count) = 0;
-  
+
   virtual Buffer* getbuffer() = 0;
   virtual Buffer* getmetadata() = 0;
 };

@@ -894,7 +894,9 @@ int single_scale_main(int argc,char *argv[])
 
     /* Sparse INITIALIZATION ROUTINES */
     for (int ia = 0, e = mp.physicsno; ia < e; ++ia) {
-      sol[ia].system = pgfem3d::solvers::SparseSystem::Create(options, com[ia].comm,
+      sol[ia].system = pgfem3d::solvers::SparseSystem::Create(options,
+                                                              *com[ia].net,
+                                                              com[ia].comm,
                                                               com[ia].Ap,
                                                               com[ia].Ai,
                                                               com[ia].DomDof,

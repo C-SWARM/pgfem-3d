@@ -67,7 +67,7 @@ struct TrilinosWrap : public SparseSystem
   /// @param maxit       The maximum number of iterations.
   /// @param err         The error tolerance used during solving.
   TrilinosWrap(const PGFem3D_opt& options, MPI_Comm comm, const int Ap[],
-        const GO Ai[], const long rowsPerProc[], int maxit, double err);
+               const GO Ai[], GO iMin, GO iMax, long maxit, double err);
 
   ~TrilinosWrap();
 
@@ -81,12 +81,6 @@ struct TrilinosWrap : public SparseSystem
   /// Reset the prconditioner.
   void resetPreconditioner();
 
-  /// Check to see if the row is owned by the local rank.
-  ///
-  /// @param i          The global row index to check.
-  /// @returns          TRUE if the row is local, FALSE otherwise.
-  bool isLocalRow(GO i) const;
-  
   /// Zero the underlying matrix data.
   void zero();
 
@@ -135,10 +129,10 @@ struct TrilinosWrap : public SparseSystem
 
   /** set preconditioner options */
   void setTeuchosParameters(const char *prec_xmlpath, const char *sol_xmlpath);
-  
+
   // Teuchos::RCP is the reference counting smart pointer used throughout
   // Trilinos.
-  
+
   // The linear system data (Ax=b)
   Teuchos::RCP<TCrsMatrix> _localk;               //!< The local matrix handle
   Teuchos::RCP<TCrsMatrix>      _k;               //!< The matrix handle
@@ -148,7 +142,7 @@ struct TrilinosWrap : public SparseSystem
   // Belos linear problem and solver manager
   Teuchos::RCP<Belos::LinearProblem<ST,MV,OP> > _problem;
   Teuchos::RCP<Belos::SolverManager<ST,MV,OP> >  _solver;
-  
+
   // Trilinos parameter lists
   Teuchos::RCP<Teuchos::ParameterList> _belosList;
   Teuchos::RCP<Teuchos::ParameterList> _precList;
@@ -159,7 +153,7 @@ struct TrilinosWrap : public SparseSystem
 
   // MueLu Preconditioner
   Teuchos::RCP<MueLu::TpetraOperator<ST,LO,GO> > _mueluprec;
-  
+
   // Preconditioner operator for either Ifpack2 or MueLu
   Teuchos::RCP<OP> _preconditioner;
 
@@ -169,9 +163,6 @@ struct TrilinosWrap : public SparseSystem
 
   GO *_gRows = nullptr;                        //!< Local row indices
   size_t *_nCols = nullptr;                    //!< Number of columns per row
-
-  GO _ilower = 0;                              //!< Row lower bound
-  GO _iupper = 0;                              //!< Row upper bound
 
   int _prectype;
   std::string _ifpacktype;

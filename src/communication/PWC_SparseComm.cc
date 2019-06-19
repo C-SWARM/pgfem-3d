@@ -14,7 +14,7 @@ using namespace pgfem3d::net;
 using pgfem3d::solvers::SparseSystem;
 
 namespace pgfem3d {
-  
+
   PWC_SparseComm::PWC_SparseComm(PWCNetwork *n, PGFem3D_Comm c)
   {
     S = NULL;
@@ -39,14 +39,14 @@ namespace pgfem3d {
 
     total_lg_ssz = 0;
     total_lg_rsz = 0;
-    
+
     net = n;
     comm = c;
-    
+
     n->comm_rank(c, &myrank);
     n->comm_size(c, &nproc);
   }
-  
+
   PWC_SparseComm::~PWC_SparseComm()
   {
     for (long i=0; i<nproc; i++) {
@@ -57,7 +57,7 @@ namespace pgfem3d {
       PGFEM_free(RAp[i]);
       PGFEM_free(RGRId[i]);
     }
-    
+
     PGFEM_free(S);
     PGFEM_free(R);
     PGFEM_free(AS);
@@ -72,13 +72,13 @@ namespace pgfem3d {
     PGFEM_free(RGRId);
     PGFEM_free(Nss);
     PGFEM_free(Nrr);
-    
+
     /* destroy maps */
     if (fast_LG_map != NULL)
       PGFEM_free(fast_LG_map->maps);
     if (fast_GL_map != NULL)
       PGFEM_free(fast_GL_map->maps);
-    
+
     PGFEM_free(fast_LG_map);
     PGFEM_free(fast_GL_map);
 
@@ -91,23 +91,23 @@ namespace pgfem3d {
     dealoc1l(recv);
     dealoc1l(local_s);
     dealoc1l(local_r);
-    dealoc1l(remote);    
+    dealoc1l(remote);
     dealoc1l(lg_S);
     dealoc1l(lg_R);
     dealoc1l(local_lg_S);
-    dealoc1l(local_lg_R); 
+    dealoc1l(local_lg_R);
     dealoc1l(remote_lg_S);
     dealoc1l(remote_lg_R);
   }
 
   void PWC_SparseComm::exchange(Buffer *in, Buffer *out, long nsend,
-				long nrecv, long *idxs)
+                long nrecv, long *idxs)
   {
     CID lid = LOCAL_ID;
-    
+
     // get remote backing buffer keys
     net->allgather(&in[myrank], sizeof(Buffer), NET_DT_BYTE,
-    		   out, sizeof(Buffer), NET_DT_BYTE, comm);
+               out, sizeof(Buffer), NET_DT_BYTE, comm);
 
     for (int i = 0; i < nsend; ++i) {
       long p = idxs[i];
@@ -116,7 +116,7 @@ namespace pgfem3d {
       net->pwc(p, 0, 0, 0, lid, rid);
     }
     net->wait_n_id(nsend, lid);
-    
+
     // wait for and update sending addresses (remote recv offsets)
     int n_received = 0;
     while (n_received < nrecv) {
@@ -125,18 +125,18 @@ namespace pgfem3d {
       Status stat;
       net->probe(&flag, &addr, &stat, 0);
       if (flag) {
-	int p = stat.NET_SOURCE;
-	out[p].addr = (uintptr_t)addr;
-	n_received++;
+    int p = stat.NET_SOURCE;
+    out[p].addr = (uintptr_t)addr;
+    n_received++;
       }
     }
   }
-  
+
   void PWC_SparseComm::initialize()
   {
     Key skey, rkey;
     Key lg_skey, lg_rkey;
-    
+
     send = PGFEM_calloc(double*, nproc);
     recv = PGFEM_calloc(double*, nproc);
 
@@ -146,12 +146,12 @@ namespace pgfem3d {
 
     lg_S = PGFEM_calloc(double*, nproc);
     lg_R = PGFEM_calloc(double*, nproc);
-    
+
     local_lg_S = PGFEM_calloc(Buffer, nproc);
     local_lg_R = PGFEM_calloc(Buffer, nproc);
     remote_lg_S = PGFEM_calloc(Buffer, nproc);
     remote_lg_R = PGFEM_calloc(Buffer, nproc);
-    
+
     // how much space for send
     for (int i = 0; i < Ns; ++i) {
       long p = Nss[i];
@@ -166,7 +166,7 @@ namespace pgfem3d {
     backing_lg_S = PGFEM_calloc_pin(double, total_lg_ssz, net, &lg_skey);
     local_s[myrank].key = skey;
     local_lg_S[myrank].key = lg_skey;
-    
+
     // map send arrays to backing buffers
     char *sptr = (char*)backing_s;
     char *lg_sptr = (char*)backing_lg_S;
@@ -179,12 +179,12 @@ namespace pgfem3d {
       lg_S[p] = (double*)lg_sptr;
       local_lg_S[p].addr = (uintptr_t)lg_sptr;
       local_lg_S[p].key = lg_skey;
-      
+
       // advance backing buffer ptrs
       sptr += local_s[p].size;
       lg_sptr += local_lg_S[p].size;
     }
-    
+
     // how much space for recv
     for (int i = 0; i < Nr; ++i) {
       long p = Nrr[i];
@@ -199,7 +199,7 @@ namespace pgfem3d {
     backing_lg_R = PGFEM_calloc_pin(double, total_lg_rsz, net, &lg_rkey);
     local_r[myrank].key = rkey;
     local_lg_R[myrank].key = lg_rkey;
-    
+
     // map recv arrays to backing buffers
     char *rptr = (char*)backing_r;
     char *lg_rptr = (char*)backing_lg_R;
@@ -212,7 +212,7 @@ namespace pgfem3d {
       lg_R[p] = (double*)lg_rptr;
       local_lg_R[p].addr = (uintptr_t)lg_rptr;
       local_lg_R[p].key = lg_rkey;
-      
+
       // advance backing buffer ptr
       rptr += local_r[p].size;
       lg_rptr += local_lg_R[p].size;
@@ -224,7 +224,7 @@ namespace pgfem3d {
     exchange(local_lg_S, remote_lg_S, Ns, Nr, Nss);
     exchange(local_lg_R, remote_lg_R, Nr, Ns, Nrr);
   }
-  
+
   void PWC_SparseComm::post_stiffmat(double ***Lk, double ***receive)
   {
     // calling code expects zeroed buffers
@@ -257,7 +257,7 @@ namespace pgfem3d {
   {
     net->barrier(comm);
   }
-  
+
   void PWC_SparseComm::assemble_nonlocal_stiffmat(solvers::SparseSystem* system)
   {
     CID proc;
@@ -267,83 +267,83 @@ namespace pgfem3d {
       Status stat;
       net->probe(&flag, &proc, &stat, 0);
       if (flag) {
-	/* get number of rows */
-	const int nrows = R[proc];
-	
-	/* allocate rows and cols to receive */
-	SparseSystem::sp_idx *row_idx = PGFEM_calloc(SparseSystem::sp_idx, nrows);
-	SparseSystem::sp_idx *ncols = PGFEM_calloc(SparseSystem::sp_idx, nrows);
-	SparseSystem::sp_idx *col_idx = PGFEM_calloc(SparseSystem::sp_idx, AR[proc]);
-	
-	/* get row and column ids */
-	SparseSystem::sp_idx idx = 0;
-	for(int j=0; j<R[proc]; j++){
-	  row_idx[j] = RGID[proc][j];
-	  ncols[j] = RAp[proc][j];
-	  for(SparseSystem::sp_idx k=0; k<ncols[j]; k++){
-	    col_idx[idx] = RGRId[proc][idx];
-	    ++idx;
-	  }
-	}
-	
-	/* assemble to local part of global stiffness */
-	system->add(nrows, ncols, row_idx, col_idx, recv[proc]);
-	
-	/* free memory */
-	PGFEM_free(row_idx);
-	PGFEM_free(ncols);
-	PGFEM_free(col_idx);
+    /* get number of rows */
+    const int nrows = R[proc];
 
-	/* increment counter */
-	n_received++;
+    /* allocate rows and cols to receive */
+    SparseSystem::Index *row_idx = PGFEM_calloc(SparseSystem::Index, nrows);
+    SparseSystem::Index *ncols = PGFEM_calloc(SparseSystem::Index, nrows);
+    SparseSystem::Index *col_idx = PGFEM_calloc(SparseSystem::Index, AR[proc]);
+
+    /* get row and column ids */
+    SparseSystem::Index idx = 0;
+    for(int j=0; j<R[proc]; j++){
+      row_idx[j] = RGID[proc][j];
+      ncols[j] = RAp[proc][j];
+      for(SparseSystem::Index k=0; k<ncols[j]; k++){
+        col_idx[idx] = RGRId[proc][idx];
+        ++idx;
+      }
+    }
+
+    /* assemble to local part of global stiffness */
+    system->add(nrows, ncols, row_idx, col_idx, recv[proc]);
+
+    /* free memory */
+    PGFEM_free(row_idx);
+    PGFEM_free(ncols);
+    PGFEM_free(col_idx);
+
+    /* increment counter */
+    n_received++;
       }
     }
   }
 
   void PWC_SparseComm::LToG(const double *f, double *Gf,
-			    const long ndofd, const long *DomDof,
-			    const int GDof)
+                const long ndofd, const long *DomDof,
+                const int GDof)
   {
     long i,j,KK;
     CID lid = LOCAL_ID;
     CID rid = myrank;
-    
+
     /* for (i=0;i<DomDof[myrank];i++) */
     /*   Gf[i] = 0.0; */
     nulld(Gf,DomDof[myrank]);
-    
+
     if(UTILS_DEBUG){/* debug the snd-rcv */
       for(int i=0; i<nproc; i++){
-	if(myrank == i){
-	  for(int j=0; j<nproc; j++){
-	    PGFEM_printf("[%d]: snding %ld to %d\n",myrank,S[j],j);
-	    PGFEM_printf("[%d]: recieving %ld from %d\n",myrank,R[j],j);
-	  }
-	}
-	net->barrier(comm);
+    if(myrank == i){
+      for(int j=0; j<nproc; j++){
+        PGFEM_printf("[%d]: snding %ld to %d\n",myrank,S[j],j);
+        PGFEM_printf("[%d]: recieving %ld from %d\n",myrank,R[j],j);
+      }
+    }
+    net->barrier(comm);
       }
       net->barrier(comm);
     }
-    
+
     /****************/
     /* Receive data */
     /****************/
     // PWC one-sided recv buffers already allocated and mapped at init
-    
+
     /*************/
     /* Send data */
     /*************/
     for (i=0;i<Ns;i++){
       KK = Nss[i];
       for (j=0;j<S[KK];j++)
-	lg_S[KK][j] = f[SLID[KK][j]];
+    lg_S[KK][j] = f[SLID[KK][j]];
 
       net->pwc(KK, local_lg_S[KK].size, &local_lg_S[KK],
-	       &remote_lg_R[KK], lid, rid);
+           &remote_lg_R[KK], lid, rid);
     }
-    
+
     get_owned_global_dof_values(f, Gf);
-    
+
     /* Wait to complete the comunicatins */
     net->wait_n_id(Ns, lid);
 
@@ -354,47 +354,47 @@ namespace pgfem3d {
       Status stat;
       net->probe(&flag, &proc, &stat, 0);
       if (flag) {
-	KK = proc;
-	for (j=0;j<R[KK];j++)
-	  Gf[RGID[KK][j] - GDof] += lg_R[KK][j];
-	n_received++;
+    KK = proc;
+    for (j=0;j<R[KK];j++)
+      Gf[RGID[KK][j] - GDof] += lg_R[KK][j];
+    n_received++;
       }
     }
     net->barrier(comm);
   }
-  
+
   void PWC_SparseComm::GToL(const double *Gr, double *r,
-			    const long ndofd, const int GDof)
+                const long ndofd, const int GDof)
   {
     long i,j,KK;
     CID lid = LOCAL_ID;
     CID rid = myrank;
-    
+
     //  for (i=0;i<ndofd;i++) r[i] = 0.0;
     nulld(r,ndofd);
-    
+
     //  for (i=0;i<ndofd;i++) r[i] = 0.0;
     nulld(r,ndofd);
-    
+
     /****************/
     /* Receive data */
     /****************/
     // PWC one-sided recv buffers already allocated and mapped at init
-    
+
     /*************/
     /* Send data */
     /*************/
     for (i=0;i<Nr;i++){
       KK = Nrr[i];
       for (j=0;j<R[KK];j++)
-	lg_R[KK][j] = Gr[RGID[KK][j] - GDof];
+    lg_R[KK][j] = Gr[RGID[KK][j] - GDof];
 
       net->pwc(KK, local_lg_R[KK].size, &local_lg_R[KK],
-	       &remote_lg_S[KK], lid, rid);
+           &remote_lg_S[KK], lid, rid);
     }
-    
+
     get_local_dof_values_from_global(Gr,r);
-    
+
     /* Wait to complete the comunicatins */
     net->wait_n_id(Nr, lid);
 
@@ -405,10 +405,10 @@ namespace pgfem3d {
       Status stat;
       net->probe(&flag, &proc, &stat, 0);
       if (flag) {
-	KK = proc;
-	for (j=0;j<S[KK];j++)
-	  r[SLID[KK][j]] = lg_S[KK][j];
-	n_received++;
+    KK = proc;
+    for (j=0;j<S[KK];j++)
+      r[SLID[KK][j]] = lg_S[KK][j];
+    n_received++;
       }
     }
     net->barrier(comm);

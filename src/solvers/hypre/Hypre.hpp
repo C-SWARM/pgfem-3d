@@ -92,11 +92,12 @@ struct Hypre : public SparseSystem
   /// @param comm        The communicator on which this object lives.
   /// @param Ap
   /// @param Ai
-  /// @param rowsPerProc The row partitioning for this solver.
+  /// @param iMin        The minimum row index for this rank.
+  /// @param iMax        The maximum row index for this rank (half-open)
   /// @param maxit       The maximum number of iterations.
   /// @param err         The error tolerance used during solving.
   Hypre(const PGFem3D_opt& options, MPI_Comm comm, const int Ap[],
-        const Ai_t Ai[], const long rowsPerProc[], int maxit, double err);
+        const Index Ai[], Index iMin, Index iMax, long maxit, double err);
 
   ~Hypre();
 
@@ -104,17 +105,11 @@ struct Hypre : public SparseSystem
   void assemble();
 
   /// Add partial sums to values.
-  void add(int nrows, sp_idx ncols[], sp_idx const rids[], const sp_idx cids[],
+  void add(int nrows, Index ncols[], Index const rids[], const Index cids[],
            const double vals[]);
 
   /// Reset the prconditioner.
   void resetPreconditioner();
-
-  /// Check to see if the row is owned by the local rank.
-  ///
-  /// @param i          The global row index to check.
-  /// @returns          TRUE if the row is local, FALSE otherwise.
-  bool isLocalRow(Ai_t i) const;
 
   /// Zero the underlying matrix data.
   void zero();
@@ -177,6 +172,16 @@ struct Hypre : public SparseSystem
             ptr_norm_t get_res_norm,
             SOLVER_INFO *info);
 
+  /// Hypre doesn't want half-open intervals so we adapt the superclass' notion
+  // of min and max.
+  auto ilower() const {
+    return iMin_;
+  }
+
+  auto iupper() const {
+    return iMax_ - 1;
+  }
+
   // The linear system data (Ax=b)
   HYPRE_IJMatrix        _k = nullptr;           //!< The matrix handle
   HYPRE_IJVector      _rhs = nullptr;           //!< The RHS vector handle
@@ -184,13 +189,10 @@ struct Hypre : public SparseSystem
 
   // Sparse matrix data relevant to the distribution of data.
   const MPI_Comm _comm;                         //!<
-  const Ai_t * const _Ai;                       //!< reference to column array
+  const Index * const _Ai;                       //!< reference to column array
 
   HYPRE_t *_gRows = nullptr;                    //!< Local row indices
   HYPRE_t *_nCols = nullptr;                    //!< Number of columns per row
-
-  HYPRE_t _ilower = 0;                          //!< Row lower bound
-  HYPRE_t _iupper = 0;                          //!< Row upper bound
 
   Preconditioner* _preconditioner = nullptr;
   Solver*                 _solver = nullptr;
