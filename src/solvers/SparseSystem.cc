@@ -36,6 +36,9 @@ SparseSystem::Create(const PGFem3D_opt& opts,
   auto  min = rows.min(rank);
   auto  max = rows.max(rank);
 
+  assert(0 <= min   and min < std::numeric_limits<Index>::max());
+  assert(min <= max and max < std::numeric_limits<Index>::max());
+
   if (opts.solverpackage == HYPRE) {
     return new hypre::Hypre(opts, (MPI_Comm)comm, Ap, Ai, min, max, maxit, err);
   }
