@@ -112,7 +112,7 @@ EPS* build_eps_il (const long ne,
  */
 void copy_eps_list(EPS *dest,
                    const EPS *src,
-                   const int ne,
+                   const long ne,
                    const Element *elem,
                    const int analysis);
 
@@ -120,7 +120,7 @@ void copy_eps_list(EPS *dest,
  * return size of EPS for all elements in bytes
  */
 size_t sizeof_eps_list(const EPS *src,
-                       const int ne,
+                       const long ne,
                        const Element *elem,
                        const int analysis);
 
@@ -128,7 +128,7 @@ size_t sizeof_eps_list(const EPS *src,
  * Pack EPS for all elements into a buffer.
  */
 void pack_eps_list(const EPS *src,
-                   const int ne,
+                   const long ne,
                    const Element *elem,
                    const int analysis,
                    char *buffer,
@@ -138,7 +138,7 @@ void pack_eps_list(const EPS *src,
  * Unpack EPS for all elements from a buffer.
  */
 void unpack_eps_list(EPS *dest,
-                     const int ne,
+                     const long ne,
                      const Element *elem,
                      const int analysis,
                      const char *buffer,

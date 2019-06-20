@@ -197,9 +197,9 @@ int construct_field_varialbe(FieldVariables *fv,
     {
       const Element *elem = grid->element;
       int n_state_varialbles = 0;
-      for(int eid=0; eid<grid->ne; eid++)
+      for(long eid=0; eid<grid->ne; eid++)
       {
-        int nne = elem[eid].toe;
+        long nne = elem[eid].toe;
         long nint = 0;
         int_point(nne,&nint);
         n_state_varialbles += nint;

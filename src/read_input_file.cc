@@ -146,7 +146,7 @@ int read_multiphysics_material_properties(MaterialProperty *mat,
     PGFEM_Abort();
   }
 
-  for(int i = 0, e = mat->nhommat; i < e; ++i) {
+  for(long i = 0, e = mat->nhommat; i < e; ++i) {
     mat->hommat[i].density = d[mat->hommat[i].mat_id];
     if (myrank == 0) {
       PGFEM_printf("Density(%d), %e\n", i, mat->hommat[i].density);
@@ -915,7 +915,7 @@ int read_initial_values_lagcy(Grid *grid,
     {
       if(line[0]=='#')
         continue;
-      for(int a=0; a<mat->nmat; a++)
+      for(long a=0; a<mat->nmat; a++)
       {
         sscanf(line, "%lf", rho+a);
         if(a<mat->nmat-1)
@@ -926,7 +926,7 @@ int read_initial_values_lagcy(Grid *grid,
       break;
     }
 
-    for(int ia = 0; ia<mat->nhommat; ia++)
+    for(long ia = 0; ia<mat->nhommat; ia++)
     {
       (mat->hommat[ia]).density = rho[(mat->hommat[ia]).mat_id];
       if(myrank==0)
@@ -1039,7 +1039,7 @@ int read_initial_for_Mechanical(FILE *fp,
   {
     if(line[0]=='#')
       continue;
-    for(int a=0; a<mat->nmat; a++)
+    for(long a=0; a<mat->nmat; a++)
     {
       sscanf(line, "%lf", rho+a);
       if(a<mat->nmat-1) {
@@ -1051,7 +1051,7 @@ int read_initial_for_Mechanical(FILE *fp,
     break;
   }
 
-  for(int ia = 0; ia<mat->nhommat; ia++)
+  for(long ia = 0; ia<mat->nhommat; ia++)
   {
     (mat->hommat[ia]).density = rho[(mat->hommat[ia]).mat_id];
     if(myrank==0)
@@ -1157,7 +1157,7 @@ int read_initial_for_Thermal(FILE *fp,
   if(opts->restart < 0)
   {
     // set default
-    for(int ia=0; ia<grid->nn; ia++)
+    for(long ia=0; ia<grid->nn; ia++)
     {
       fv->u_nm1[ia] = T0;
       fv->u_n[ia] = T0;
@@ -1179,7 +1179,7 @@ int read_initial_for_Thermal(FILE *fp,
     }
   }
 
-  for(int ia = 0; ia<grid->nn; ia++)
+  for(long ia = 0; ia<grid->nn; ia++)
   {
     long id = grid->node[ia].id_map[mp_id].id[0];
     if(id>0)

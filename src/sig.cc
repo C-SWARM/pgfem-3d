@@ -14,7 +14,7 @@ SIG* build_sig_el (const long ne)
 {
   SIG *pom = PGFEM_calloc (SIG, ne);
 
-  for (int i=0;i<ne;i++){
+  for (long i = 0; i < ne; ++i){
     pom[i].el.o  = PGFEM_calloc (double, 6);
     pom[i].el.f  = PGFEM_calloc (double, 6);
     pom[i].el.d  = PGFEM_calloc (double, 6);
@@ -32,7 +32,7 @@ SIG* build_sig_el (const long ne)
 void destroy_sig_el(SIG* sig,
                     const long ne)
 {
-  for(long i=0; i<ne; i++){
+  for(long i = 0; i < ne; ++i){
     PGFEM_free(sig[i].el.o);
     PGFEM_free(sig[i].el.f);
     PGFEM_free(sig[i].el.d);
@@ -51,16 +51,16 @@ SIG* build_sig_il (const long ne,
 */
 {
   SIG *pom;
-  long i,j,II,nne;
+  long II, nne;
 
   pom = PGFEM_calloc (SIG, ne);
 
-  for (i=0;i<ne;i++){
+  for (long i = 0; i < ne; ++i){
 
     nne = elem[i].toe;
 
     /* Integration */
-    int_point (nne,&II);
+    int_point (nne, &II);
 
     switch(analysis){ /* this can be cleaned up a bit more */
      case FS_CRPL:
@@ -71,7 +71,7 @@ SIG* build_sig_il (const long ne,
      case DISP:
       pom[i].el.o = PGFEM_calloc (double, 6);
       pom[i].il = PGFEM_calloc (IL0_sig, II);
-      for (j=0;j<II;j++)
+      for (long j = 0; j < II; ++j)
         pom[i].il[j].o = PGFEM_calloc (double, 6);
       break;
 
@@ -86,7 +86,7 @@ SIG* build_sig_il (const long ne,
         pom[i].el.m = PGFEM_calloc (double, 6);
       }
 
-      for (j=0;j<II;j++){
+      for (long j = 0; j < II; ++j){
         pom[i].il[j].o = PGFEM_calloc (double, 6);
         if (analysis == TP_ELASTO_PLASTIC){
           pom[i].d_il[j].o = PGFEM_calloc (double, 6);
@@ -124,12 +124,12 @@ void destroy_sig_il(SIG* sig,
 
   long nip;
 
-  for(long i=0; i<ne; i++){
+  for(long i = 0; i < ne; ++i){
     int_point (elem[i].toe,&nip);
 
     switch(analysis){
      default:
-      for(long j=0; j<nip; j++){
+      for(long j = 0; j < nip; ++j){
         PGFEM_free(sig[i].il[j].o);
       }
 
@@ -139,7 +139,7 @@ void destroy_sig_il(SIG* sig,
 
      case ELASTIC:
      case TP_ELASTO_PLASTIC:
-      for(long j=0; j<nip; j++){
+      for(long j = 0; j < nip; ++j){
         PGFEM_free(sig[i].il[j].o);
         if(analysis == TP_ELASTO_PLASTIC){
           PGFEM_free(sig[i].d_il[j].o);

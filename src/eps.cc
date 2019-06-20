@@ -27,10 +27,10 @@ EPS* build_eps_il(const long ne,
 /* INELASTIC */
 {
   EPS *pom = PGFEM_calloc (EPS, ne);
-  long II,JJ,nne;
+  long II, JJ, nne;
   int n_state_varialbles = 0; // count number of element variables
 
-  for (long i=0;i<ne;i++){
+  for (long i = 0; i < ne; ++i){
     /* initialize ALL variables */
     EPS *p_pom = &pom[i];
 
@@ -73,11 +73,11 @@ EPS* build_eps_il(const long ne,
 
     nne = elem[i].toe;
     /* Integration */
-    int_point (nne,&II); int_point (10,&JJ);
+    int_point (nne, &II); int_point (10, &JJ);
 
     if(analysis == MINI
        || analysis == MINI_3F){ /* linear plus bubble */
-      int_point (5,&JJ);
+      int_point (5, &JJ);
     }
 
     switch(analysis){ /* can be cleaned up a bit */
@@ -99,7 +99,7 @@ EPS* build_eps_il(const long ne,
          /* Pressure integration part */
          if (analysis == STABILIZED
              || analysis == MINI){
-           for (long j=0;j<JJ;j++)
+           for (long j = 0; j < JJ; ++j)
              pom[i].st[j].Fpp = PGFEM_calloc (double, TENSOR_2);
          }
 
@@ -110,11 +110,11 @@ EPS* build_eps_il(const long ne,
           * allocate the first element anyhow... MM 2/20/2013 */
          if(i == 0){
            pom[0].Dp = PGFEM_calloc (double*, NDN);
-           for (unsigned j=0;j<NDN;j++)
+           for (unsigned j = 0; j < NDN; ++j)
              pom[0].Dp[j] = PGFEM_calloc (double, NDN);
          }
 
-         for (long j=0;j<II;j++){
+         for (long j = 0; j < II; ++j){
            if (analysis == CM || analysis == CM3F) {
              pom[i].model[j].vars_list = statv_list;
              pom[i].model[j].model_id = n_state_varialbles;
@@ -137,18 +137,18 @@ EPS* build_eps_il(const long ne,
              pom[i].il[j].dUU_Fr   = PGFEM_calloc (double***, NDN);
              pom[i].il[j].dUU_Fr_n = PGFEM_calloc (double***, NDN);
 
-             for (unsigned M=0;M<NDN;M++){
+             for (unsigned M = 0; M < NDN; ++M){
 
                pom[i].il[j].dUU_Tr[M]   = PGFEM_calloc (double, NDN);
                pom[i].il[j].dUU_Tr_n[M] = PGFEM_calloc (double, NDN);
                pom[i].il[j].dUU_Fr[M]   = PGFEM_calloc (double**, NDN);
                pom[i].il[j].dUU_Fr_n[M] = PGFEM_calloc (double**, NDN);
 
-               for (unsigned N=0;N<NDN;N++){
+               for (unsigned N = 0; N < NDN; ++N){
                  pom[i].il[j].dUU_Fr[M][N]= PGFEM_calloc (double*, NDN);
                  pom[i].il[j].dUU_Fr_n[M][N] = PGFEM_calloc (double*, NDN);
 
-                 for (unsigned P=0;P<NDN;P++){
+                 for (unsigned P = 0; P < NDN; ++P){
                    pom[i].il[j].dUU_Fr[M][N][P] = PGFEM_calloc (double, NDN);
                    pom[i].il[j].dUU_Fr_n[M][N][P] = PGFEM_calloc (double, NDN);
                  }
@@ -168,7 +168,7 @@ EPS* build_eps_il(const long ne,
            pom[0].Fe  = PGFEM_calloc (double*, NDN);
            pom[0].Fp  = PGFEM_calloc (double*, NDN);
 
-           for (size_t k=0;k<NDN;k++){
+           for (size_t k = 0; k < NDN; ++k){
              pom[0].F[k]  = PGFEM_calloc (double, NDN);
              pom[0].Fn[k] = PGFEM_calloc (double, NDN);
              pom[0].FB[k] = PGFEM_calloc (double, NDN);
@@ -194,7 +194,7 @@ EPS* build_eps_il(const long ne,
         pom[i].el.i  = PGFEM_calloc (double, SYM_TENSOR);
       }
 
-      for (long j=0;j<II;j++){
+      for (long j = 0; j < II; ++j){
         pom[i].il[j].o    = PGFEM_calloc (double, SYM_TENSOR);
         if (analysis == TP_ELASTO_PLASTIC){
           pom[i].d_il[j].o  = PGFEM_calloc (double, SYM_TENSOR);
@@ -354,20 +354,20 @@ static void copy_eps(EPS *dest,
   /* begin copying. See build_eps_il */
   copy_eps_local(dest,src,analysis);
 
-  for(int i=0; i<pt_I; i++){
+  for(long i = 0; i < pt_I; ++i){
     copy_damage(dest->dam+i,src->dam+i);
     copy_IL0_eps((dest->il + i),(src->il + i),analysis);
     copy_IL1_eps((dest->d_il + i),(src->d_il + i),analysis);
   }
 
-  for(int j=0; j<pt_J; j++){
-    copy_IL2_eps(dest->st+j,src->st+j,analysis);
+  for(long j = 0; j < pt_J; ++j){
+    copy_IL2_eps(dest->st+j, src->st+j, analysis);
   }
 }
 
 void copy_eps_list(EPS *dest,
                    const EPS *src,
-                   const int ne,
+                   const long ne,
                    const Element *elem,
                    const int analysis)
 {
@@ -384,8 +384,8 @@ void copy_eps_list(EPS *dest,
   }
 
   /* for each element */
-  for(int n=0; n<ne; n++){
-    copy_eps(dest+n,src+n,elem+n,analysis);
+  for(long n = 0; n < ne; ++n){
+    copy_eps(dest+n, src+n, elem+n, analysis);
   }
 }
 
@@ -498,7 +498,7 @@ static size_t sizeof_eps(const EPS *eps,
 }
 
 size_t sizeof_eps_list(const EPS *src,
-                       const int ne,
+                       const long ne,
                        const Element *elem,
                        const int analysis)
 {
@@ -511,8 +511,8 @@ size_t sizeof_eps_list(const EPS *src,
    case TP_ELASTO_PLASTIC: break;
   }
 
-  for(int i=0; i<ne; i++){
-    s += sizeof_eps(src+i,elem+i,analysis);
+  for(long i = 0; i < ne; ++i){
+    s += sizeof_eps(src+i, elem+i, analysis);
   }
   return s;
 }
@@ -715,7 +715,7 @@ static void pack_eps(const EPS *src,
 
   pack_eps_local(src,analysis,buffer,pos);
 
-  for(int i=0; i<pt_I; i++){
+  for(long i = 0; i < pt_I; ++i){
     pack_damage((src->dam)+i,buffer,pos);
     if (src->model != NULL) {
       src->model[i].pack(buffer, pos);
@@ -724,7 +724,7 @@ static void pack_eps(const EPS *src,
     pack_IL1_eps((src->d_il)+i,analysis,buffer,pos);
   }
 
-  for(int j=0; j<pt_J; j++){
+  for(long j = 0; j < pt_J; ++j){
     pack_IL2_eps((src->st)+j,analysis,buffer,pos);
   }
 }
@@ -748,7 +748,7 @@ static void unpack_eps(EPS *dest,
 
   unpack_eps_local(dest,analysis,buffer,pos);
 
-  for(int i=0; i<pt_I; i++){
+  for(long i = 0; i < pt_I; ++i){
     unpack_damage((dest->dam)+i,buffer,pos);
     if (dest->model != NULL) {
       dest->model[i].unpack(buffer, pos);
@@ -757,13 +757,13 @@ static void unpack_eps(EPS *dest,
     unpack_IL1_eps((dest->d_il)+i,analysis,buffer,pos);
   }
 
-  for(int j=0; j<pt_J; j++){
+  for(long j = 0; j < pt_J; ++j){
     unpack_IL2_eps((dest->st)+j,analysis,buffer,pos);
   }
 }
 
 void pack_eps_list(const EPS *src,
-                   const int ne,
+                   const long ne,
                    const Element *elem,
                    const int analysis,
                    char *buffer,
@@ -778,13 +778,13 @@ void pack_eps_list(const EPS *src,
    case TP_ELASTO_PLASTIC: break;
   }
 
-  for(int n=0; n<ne; n++){
-    pack_eps(src+n,elem+n,analysis,buffer,pos);
+  for(long n = 0; n < ne; ++n){
+    pack_eps(src+n, elem+n, analysis, buffer, pos);
   }
 }
 
 void unpack_eps_list(EPS *dest,
-                     const int ne,
+                     const long ne,
                      const Element *elem,
                      const int analysis,
                      const char *buffer,
@@ -799,7 +799,7 @@ void unpack_eps_list(EPS *dest,
    case TP_ELASTO_PLASTIC: break;
   }
 
-  for(int n=0; n<ne; n++){
+  for(long n = 0; n < ne; ++n){
     unpack_eps(dest+n,elem+n,analysis,buffer,pos);
   }
 }
@@ -846,8 +846,8 @@ void destroy_eps_il(EPS* eps,
                     const long ne,
                     const int analysis)
 {
-  for(long i=0; i<ne; i++){
-    const int nne = elem[i].toe;
+  for(long i = 0; i < ne; ++i){
+    const long nne = elem[i].toe;
     long n_ip = 0;
     long n_ipq = 0;
 
@@ -871,21 +871,21 @@ void destroy_eps_il(EPS* eps,
 
     /* inelastic */
     if(p_eps->il != NULL){
-      for(int j=0; j<n_ip; j++){
+      for(long j = 0; j < n_ip; ++j){
         destroy_IL0_eps(&p_eps->il[j]);
       }
     }
 
     /* inelastic 2 */
     if(p_eps->d_il != NULL){
-      for(int j=0; j<n_ip; j++){
+      for(long j = 0; j < n_ip; ++j){
         destroy_IL1_eps(&p_eps->d_il[j]);
       }
     }
 
     /* stabilized */
     if(p_eps->st != NULL){
-      for(int j=0; j<n_ipq; j++){
+      for(long j = 0; j < n_ipq; ++j){
         destroy_IL2_eps(&p_eps->st[j]);
       }
     }
