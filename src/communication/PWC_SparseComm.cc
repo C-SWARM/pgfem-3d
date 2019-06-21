@@ -302,7 +302,7 @@ namespace pgfem3d {
 
   void PWC_SparseComm::LToG(const double *f, double *Gf,
                 const long ndofd, const long *DomDof,
-                const int GDof)
+                const long GDof)
   {
     long i,j,KK;
     CID lid = LOCAL_ID;
@@ -364,7 +364,7 @@ namespace pgfem3d {
   }
 
   void PWC_SparseComm::GToL(const double *Gr, double *r,
-                const long ndofd, const int GDof)
+                const long ndofd, const long GDof)
   {
     long i,j,KK;
     CID lid = LOCAL_ID;

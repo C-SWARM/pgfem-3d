@@ -86,9 +86,9 @@ class SparseComm {
   virtual void assemble_nonlocal_stiffmat(pgfem3d::solvers::SparseSystem* system) = 0;
 
   virtual void LToG(const double *f, double *Gf, const long ndofd,
-                    const long *DomDof, const int GDof) = 0;
+                    const long *DomDof, const long GDof) = 0;
   virtual void GToL(const double *Gr, double *r, const long ndofd,
-                    const int GDof) = 0;
+                    const long GDof) = 0;
 
   void get_owned_global_dof_values(const double *local_dofs,
                                    double *global_dofs);

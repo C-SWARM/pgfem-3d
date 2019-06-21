@@ -1251,12 +1251,12 @@ long Newton_Raphson_with_LS(double *solve_time,
       if(opts->analysis_type == MINI){
         MINI_check_resid(fv->ndofn,grid->ne,grid->element,grid->node,mat->hommat,fv->eps,
                          fv->sig,fv->d_u,load->sups[mp_id],fv->RR,com->DomDof,fv->ndofd,
-                         com->GDof,com,mp_id);
+                         com,mp_id);
       }
       if(opts->analysis_type == MINI_3F){
         MINI_3f_check_resid(fv->ndofn,grid->ne,grid->element,grid->node,mat->hommat,fv->eps,
                             fv->sig,fv->d_u,load->sups[mp_id],fv->RR,com->DomDof,fv->ndofd,
-                            com->GDof,com,mp_id);
+                            com,mp_id);
       }
     }
 
@@ -1776,12 +1776,12 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
         if(opts->analysis_type == MINI){
           MINI_check_resid(fv->ndofn,grid->ne,grid->element,grid->node,mat->hommat,fv->eps,
                            fv->sig,fv->d_u,load->sups[mp_id],fv->RR,com->DomDof,fv->ndofd,
-                           com->GDof,com,mp_id);
+                           com,mp_id);
         }
         if(opts->analysis_type == MINI_3F){
           MINI_3f_check_resid(fv->ndofn,grid->ne,grid->element,grid->node,mat->hommat,fv->eps,
                               fv->sig,fv->d_u,load->sups[mp_id],fv->RR,com->DomDof,fv->ndofd,
-                              com->GDof,com,mp_id);
+                              com,mp_id);
         }
         INFO = 0;
         *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,com,
@@ -1818,7 +1818,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
       double *res_trac = aloc1(3);
       bounding_element_compute_resulting_traction(grid->n_be,grid->b_elems,grid->element,grid->node,
                                                   fv->eps,fv->sig,fv->ndofd,com->DomDof,
-                                                  com->GDof,com,
+                                                  com,
                                                   opts->analysis_type,
                                                   res_trac);
       PGFEM_free(res_trac);

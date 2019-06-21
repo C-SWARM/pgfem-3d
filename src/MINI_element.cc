@@ -1544,7 +1544,6 @@ void MINI_check_resid(const int ndofn,
                       const double *RR,
                       const long *DomDof,
                       const int ndofd,
-                      const int GDof,
                       const CommunicationStructure *com,
                       const int mp_id)
 {

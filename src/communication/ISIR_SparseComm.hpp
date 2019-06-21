@@ -16,9 +16,9 @@ public:
   void assemble_nonlocal_stiffmat(pgfem3d::solvers::SparseSystem* system);
 
   void LToG(const double *f, double *Gf, const long ndofd,
-	    const long *DomDof, const int GDof);
+	    const long *DomDof, const long GDof);
   void GToL(const double *Gr, double *r, const long ndofd,
-	    const int GDof);
+	    const long GDof);
 private:
   net::ISIRNetwork *net;
   net::Request *req_s, *req_r;

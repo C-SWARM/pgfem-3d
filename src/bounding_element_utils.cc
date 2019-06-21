@@ -587,8 +587,7 @@ int bounding_element_compute_resulting_traction(const int n_be,
                                                 const SIG *sig,
                                                 const int ndofd,
                                                 const long *DomDof,
-                                                const int GDof,
-						const CommunicationStructure *com,
+                                                const CommunicationStructure *com,
                                                 const int analysis,
                                                 double *res_trac)
 {

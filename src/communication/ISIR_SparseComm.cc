@@ -230,7 +230,7 @@ namespace pgfem3d {
 
   void ISIR_SparseComm::LToG(const double *f, double *Gf,
                  const long ndofd, const long *DomDof,
-                 const int GDof)
+                 const long GDof)
   {
     assert(ndofd > 0);
     assert(GDof >= 0);
@@ -324,7 +324,7 @@ namespace pgfem3d {
   }
 
   void ISIR_SparseComm::GToL(const double *Gr, double *r,
-                 const long ndofd, const int GDof)
+                 const long ndofd, const long GDof)
   {
     assert(ndofd > 0);
     assert(GDof >= 0);
