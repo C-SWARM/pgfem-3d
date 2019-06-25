@@ -34,21 +34,4 @@ void PLoc_Sparse (double **Lk,
                   pgfem3d::solvers::SparseSystem *system,
                   const int analysis);
 
-/** PLoc_Sparse_rec for general (non-square) matrices. */
-void PLoc_Sparse_rec (double **Lk,
-                      double *lk,
-                      Ai_t *Ai,
-                      int *Ap,
-                      long *cnG_row,
-                      long *cnG_col,
-                      long nrow,
-                      long ncol,
-                      long *Ddof,
-                      long GDof,
-		      int myrank,
-		      int nproc,
-		      pgfem3d::SparseComm *comm,
-                      int interior,
-                      pgfem3d::solvers::SparseSystem *system);
-
 #endif /* #ifndef PLOC_SPARSE_H */

@@ -327,8 +327,6 @@ static int bnd_el_stiffmat(int belem_id,
 
   /* only assemble to global stiffness if no error */
   if(err == 0){
-    /* PLoc_Sparse_rec(Lk,lk,Ai,Ap,Gcn_be,Gcn_ve,ndof_be,ndof_ve,Ddof, */
-    /*         GDof,myrank,nproc,comm,interior); */
     PLoc_Sparse(Lk,lk,Ai,Ap,cn_ve,Gcn_ve,ndof_ve,Ddof,
                 GDof,myrank,nproc,comm,interior,system,analysis);
   }
