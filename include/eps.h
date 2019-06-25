@@ -47,11 +47,11 @@ struct IL1_eps { /* Inelastic strain in all integration points */
 
 /** Structure of strains EPS */
 struct IL2_eps { /* Stabilized */
-  double *Fpp;
-  damage dam; /* damage at extra int points */
+  double *Fpp = nullptr;
+  Damage dam = {}; /* damage at extra int points */
 
   /* volumetric potential for damage */
-  double Un_1, Un, Jn_1;
+  double Un_1 = 0.0, Un = 0.0, Jn_1 = 0.0;
 };
 
 /** ???.
@@ -62,41 +62,47 @@ struct IL2_eps { /* Stabilized */
 struct EPS{
   /** Elastic strain */
   struct {
-    double *o,*f,*m,*i,
-      *d,eq,eq_m,eq_i;
-  } el;
+    double *o = nullptr,
+      *f = nullptr,
+      *m = nullptr,
+      *i = nullptr,
+      *d = nullptr,
+      eq = 0.0, eq_m = 0.0, eq_i = 0.0;
+  } el = {};
 
   /** Plastic strain */
   struct {
-    double *o,eq[2];
-  } pl;
+    double *o = nullptr, eq[2] = {0.0, 0.0};
+  } pl = {};
 
-  IL0_eps *il;
-  IL1_eps *d_il;
+  IL0_eps *il = nullptr;
+  IL1_eps *d_il = nullptr;
 
   /** Stabilized */
-  IL2_eps *st;
+  IL2_eps *st = nullptr;
 
   /** Volumetric Damage */
-  damage *dam;
+  Damage *dam = nullptr;
 
   /** Generalized constitutive modeling interface */
-  Constitutive_model *model;
+  Constitutive_model *model = nullptr;
 
   /** Crystal plasticity */
-  double *T,*d_T,GD;
+  double *T = nullptr, *d_T = nullptr, GD = 0.0;
 
   /** HOMOGENIZATION */
-  double **F,
-    **Fn,
-    **P,
-    **S,
-    **Fe,
-    **Fp,
-    **FB,
-    load1,load,
-    **Dp,eff;
-  long type;
+  double   **F = nullptr;
+  double  **Fn = nullptr;
+  double   **P = nullptr;
+  double   **S = nullptr;
+  double  **Fe = nullptr;
+  double  **Fp = nullptr;
+  double  **FB = nullptr;
+  double load1 = 0.0;
+  double  load = 0.0;
+  double  **Dp = nullptr;
+  double   eff = 0.0;
+  long    type = 0;
 };
 
 EPS* build_eps_il (const long ne,

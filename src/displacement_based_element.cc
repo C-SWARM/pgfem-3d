@@ -53,7 +53,7 @@ constexpr Index<'l'> l;
 static const int ndn = 3;
 static const double LAGRANGE_THRESH = 0.1;
 static const double DIFF_THRESH = 0.01;
-static const damage empty_damage = {0};
+static const Damage empty_damage = {};
 
 static inline double del(const int i, const int j){ return (i==j?1.0:0.0); }
 
@@ -72,7 +72,7 @@ static void get_material_stress(const double kappa,
 /** get the material stiffness tensor (TOTAL) */
 static void get_material_stiffness(const double kappa,
                                    const HOMMAT *hommat, /* p_mat */
-                                   const damage *dam,
+                                   const Damage *dam,
                                    const double *C,
                                    const double *C_I,
                                    const double J,
@@ -89,7 +89,7 @@ static void get_Lbar(const double kappa,
 /** Get the material sensitivity tensor (TOTAL) */
 static void get_material_sensitivity(const double kappa,
                                      const HOMMAT *p_mat,
-                                     const damage *p_dam,
+                                     const Damage *p_dam,
                                      const double *C,
                                      const double *C_I,
                                      const double J,
@@ -105,7 +105,7 @@ static void disp_based_resid_at_ip(double *R,
                                    const double *ST,
                                    const double *F,
                                    const double *Sbar,
-                                   const damage *dam,
+                                   const Damage *dam,
                                    const double jj,
                                    const double wt);
 
@@ -132,7 +132,7 @@ static void disp_based_tan_at_ip(double *K,
                                  const double *F,
                                  const double *Sbar,
                                  const double *L,
-                                 const damage *dam,
+                                 const Damage *dam,
                                  const double jj,
                                  const double wt);
 
@@ -213,7 +213,7 @@ static int integration_help(const int elem_id,
     computes function values at the 2D integration points */
 static int bnd_integration_help(const BoundingElement *ptr_be,
                                 const Element *ptr_ve,
-                                const damage *ptr_dam,
+                                const Damage *ptr_dam,
                                 const SUPP sup,
                                 const HOMMAT *ptr_mat,
                                 const int ndofn,
@@ -267,7 +267,7 @@ static int compute_K_00_e_at_ip_2(double *K_00_e,
                                   const double wt,
                                   const double *F,
                                   const double *ST,
-                                  const damage *p_dam,
+                                  const Damage *p_dam,
                                   const double *Sbar,
                                   const double *L);
 
@@ -288,7 +288,7 @@ static int compute_K_01_e_at_ip(double *K_01_e,
                                 const double wt,
                                 const double *F,
                                 const double *ST,
-                                const damage *p_dam,
+                                const Damage *p_dam,
                                 const double *Sbar,
                                 const double *L);
 
@@ -309,7 +309,7 @@ static int compute_K_10_e_at_ip(double *K_10_e,
                                 const double wt,
                                 const double *F,
                                 const double *ST,
-                                const damage *p_dam,
+                                const Damage *p_dam,
                                 const double *Sbar,
                                 const double *L);
 
@@ -424,7 +424,7 @@ int DISP_stiffmat_el(double *Ks,
         /* inverted element detected, exit and return error */
         if(err != 0 ) goto exit_function;
 
-        const damage *ptrDam = NULL;
+        const Damage *ptrDam = NULL;
         if (eps[ii].model == NULL) {
           ptrDam = &(eps[ii].dam[ip]);
           get_material_stress(kappa,&hommat[mat],C,C_I,J,Sbar);
@@ -532,7 +532,7 @@ int DISP_resid_el(double *R,
         /* inverted element detected, exit and return error */
         if(err != 0) goto exit_function;
 
-        const damage *ptrDam = NULL;
+        const Damage *ptrDam = NULL;
         if (eps[ii].model == NULL) {
           ptrDam = &(eps[ii].dam[ip]);
           get_material_stress(kappa,ptrMat,C,C_I,J,Sbar);
@@ -540,8 +540,8 @@ int DISP_resid_el(double *R,
           ptrDam = &empty_damage;
           CM_Ctx cm_ctx;
           cm_ctx.set_tensors_ss(F);
-          cm_ctx.set_time_steps_ss(dt,dt);              
-          
+          cm_ctx.set_time_steps_ss(dt,dt);
+
           eps[ii].model[ip].param->integration_algorithm(&eps[ii].model[ip], cm_ctx);
           err += disp_cm_material_response(Sbar, NULL, eps[ii].model + ip,
                                            F, dt, 0);
@@ -605,7 +605,7 @@ int DISP_resid_bnd_el(double *R,
   const BoundingElement *ptr_be = &b_elems[b_el_id];
   const Element *ptr_ve = &elem[ptr_be->vol_elem_id];
   const HOMMAT *ptrMat = &hommat[ptr_ve->mat[2]];
-  const damage *ptr_dam = &eps[ptr_be->vol_elem_id].dam[0];
+  const Damage *ptr_dam = &eps[ptr_be->vol_elem_id].dam[0];
   const long *loc_nod = ptr_be->loc_nodes;
 
   /* compute constant values */
@@ -757,7 +757,7 @@ int DISP_stiffmat_bnd_el(double *Ks,
 
   /* Get const pointers */
   const HOMMAT *ptrMat = &hommat[ptr_ve->mat[2]];
-  const damage *ptr_dam = &eps[ptr_be->vol_elem_id].dam[0];
+  const Damage *ptr_dam = &eps[ptr_be->vol_elem_id].dam[0];
   const long *loc_nod = ptr_be->loc_nodes;
 
   /* compute constant values */
@@ -1054,7 +1054,7 @@ void DISP_increment(const Element *elem,
                     const HOMMAT *hommat,
                     const double *sol_incr,
                     const double *sol,
-		    const CommunicationStructure *com,
+            const CommunicationStructure *com,
                     const int mp_id)
 {
   /* for each element */
@@ -1268,7 +1268,7 @@ int DISP_cohe_micro_terms_el(double *K_00_e,
           if(err != 0 ) goto exit_function;
 
           /* get material stress and stiffness */
-          const damage *p_dam = NULL;
+          const Damage *p_dam = NULL;
           if (eps[elem_id].model == NULL) {
             p_dam = &(eps[elem_id].dam[ip]);
             get_material_stress(kappa,p_hommat,C,C_I,J,Sbar);
@@ -1385,7 +1385,7 @@ static void get_material_stress(const double kappa,
 
 static void get_material_stiffness(const double kappa,
                                    const HOMMAT *hommat, /* pointer to 1 hommat */
-                                   const damage *dam,
+                                   const Damage *dam,
                                    const double *C,
                                    const double *C_I,
                                    const double J,
@@ -1475,7 +1475,7 @@ static void get_Lbar(const double kappa,
 
 static void get_material_sensitivity(const double kappa,
                                      const HOMMAT *p_mat,
-                                     const damage *p_dam,
+                                     const Damage *p_dam,
                                      const double *C,
                                      const double *C_I,
                                      const double J,
@@ -1564,7 +1564,7 @@ static void disp_based_resid_at_ip(double *R,
                                    const double *ST,
                                    const double *F,
                                    const double *Sbar,
-                                   const damage *dam,
+                                   const Damage *dam,
                                    const double jj,
                                    const double wt)
 {
@@ -1669,7 +1669,7 @@ static void disp_based_tan_at_ip(double *K,
                                  const double *F,
                                  const double *Sbar,
                                  const double *L,
-                                 const damage *dam,
+                                 const Damage *dam,
                                  const double jj,
                                  const double wt)
 {
@@ -1848,7 +1848,7 @@ static int integration_help(const int elem_id,
 
 static int bnd_integration_help(const BoundingElement *ptr_be,
                                 const Element *ptr_ve,
-                                const damage *ptr_dam,
+                                const Damage *ptr_dam,
                                 const SUPP sup,
                                 const HOMMAT *ptr_mat,
                                 const int ndofn,
@@ -2149,7 +2149,7 @@ static int compute_K_00_e_at_ip_2(double *K_00_e,
                                   const double wt,
                                   const double *F,
                                   const double *ST,
-                                  const damage *p_dam,
+                                  const Damage *p_dam,
                                   const double *Sbar,
                                   const double *L)
 {
@@ -2288,7 +2288,7 @@ static int compute_K_01_e_at_ip(double *K_01_e,
                                 const double wt,
                                 const double *F,
                                 const double *ST,
-                                const damage *p_dam,
+                                const Damage *p_dam,
                                 const double *Sbar,
                                 const double *L)
 {
@@ -2384,7 +2384,7 @@ static int compute_K_10_e_at_ip(double *K_10_e,
                                 const double wt,
                                 const double *F,
                                 const double *ST,
-                                const damage *p_dam,
+                                const Damage *p_dam,
                                 const double *Sbar,
                                 const double *L)
 {
