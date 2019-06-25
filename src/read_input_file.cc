@@ -25,6 +25,7 @@
 
 #include <cstring>
 #include <limits>
+#include <sstream>
 
 using namespace pgfem3d;
 using namespace pgfem3d::net;
@@ -1460,4 +1461,16 @@ int read_cohesive_elements(Grid *grid,
   /* Global number of cohesive elements */
   com->net->allreduce(&(grid->nce),&(grid->Gnce),1,NET_DT_LONG,NET_OP_SUM,com->comm);
   return err;
+}
+
+void read_Neumann_boundary_element(Grid &grid,
+                                   Multiphysics &mp,
+                                   PGFem3D_opt &opts,
+                                   const int myrank){
+  std::stringstream ss_nbe;
+  ss_nbe << opts.ipath << "/" << "NBC";
+  if(is_directory_exist(ss_nbe.str().c_str())){
+    if(myrank==0)
+      PGFEM_printf("NBC directory exists, read Neumann boundary conditions from NBC\n");
+  }
 }

@@ -10,14 +10,15 @@
 #include "elem3d.h"
 #include "tensors.h"
 #include "utils.h"
+#include "integrate_surface.h"
 
-
-static const constexpr int          LINE = 1;
-static const constexpr int      TRIANGLE = 3;
-static const constexpr int QUADRILATERAL = 4;
-static const constexpr int   TETRAHEDRON = 4;
-static const constexpr int    HEXAHEDRAL = 8;
-static const constexpr int  QTETRAHEDRON = 10;
+static const constexpr int          LINE    = 2;
+static const constexpr int      TRIANGLE    = 3;
+static const constexpr int QUADRILATERAL    = 4;
+static const constexpr int   TETRAHEDRON    = 4;
+static const constexpr int    HEXAHEDRAL    = 8;
+static const constexpr int LinearElement    = 0;
+static const constexpr int QuadraticElement = 1;
 
 void
 TEMP_VARIABLES::set_variable_size(int nne_t, int nne)
@@ -30,65 +31,108 @@ TEMP_VARIABLES::set_variable_size(int nne_t, int nne)
   this->N_z.initialization(nne, 1);
 }
 
-long
-FEMLIB::determine_integration_type(int e_type, int i_order)
-{
-  switch(i_order)
-  {
-   case 0:
-    switch(e_type)
-    {
-     case LINE:
+long number_of_integration_points_line(const int order){
+  return order + 1;
+}
+
+long number_of_integration_points_tri(const int order){
+  switch(order){
+    case 0:
       return 1;
-     case TRIANGLE:
-      return 1;
-     case TETRAHEDRON: // QUADRILATERAL
-      return 1;
-     default:
-      return 1;
-    }
-    break;
-   case 1:
-    switch(e_type)
-    {
-     case LINE:
-      return 2;
-     case TRIANGLE:
+    case 1:
       return 3;
-     case TETRAHEDRON: //QUADRILATERAL
+    case 2:
       return 4;
-     case HEXAHEDRAL:
-      return 8;
-     case QTETRAHEDRON:
-      return 4;
-     default:
-      return 4;
-    }
-    break;
-   case 2:
-    switch(e_type)
-    {
-     case TETRAHEDRON:
-      return 5;
-     case QTETRAHEDRON:
-      return 5;
-     default:
-      return 5;
-    }
-    break;
-   case 3:
-    switch(e_type)
-    {
-     case TETRAHEDRON:
-      return 11;
-     case QTETRAHEDRON:
-      return 11;
-     default:
-      return 11;
-    }
-    break;
+    default:
+      PGFEM_printerr("ERROR: number of integration points: "
+                     " order %d is not yet implemented for TRIANGLE element.\n", order);
+      PGFEM_Abort();
+      break;
   }
-  return 4;
+}
+
+long number_of_integration_points_quad(const int order){
+  switch(order){
+    case 0:
+      return 1;
+    case 1:
+      return 4;
+    case 2:
+      return 9;
+    default:
+      PGFEM_printerr("ERROR: number of integration points: "
+                     " order %d is not yet implemented for QUADRILATERAL element.\n", order);
+      PGFEM_Abort();
+      break;
+  }
+}
+
+long number_of_integration_points_tet(const int order){
+  switch(order){
+    case 0:
+      return 1;
+    case 1:
+      return 4;
+    case 2:
+      return 5;
+    case 3:
+      return 11;
+    case 4:
+      return 24;
+    default:
+      PGFEM_printerr("ERROR: number of integration points: "
+                     " order %d is not yet implemented for TETRAHEDRON element.\n", order);
+      PGFEM_Abort();
+      break;
+  }
+}
+
+long number_of_integration_points_hex(const int order){
+  switch(order){
+    case 0:
+      return 1;
+    case 1:
+      return 8; // 4th order accuracy
+    case 2:
+      return 14; // 6th order accuracy
+    case 3:
+      return 27; // 
+    default:
+      PGFEM_printerr("ERROR: number of integration points: "
+                     " order %d is not yet implemented for HEXAHEDRAL element.\n", order);
+      PGFEM_Abort();
+      break;
+  }
+}
+
+long
+FEMLIB::determine_integration_type(const int e_type,
+                                   const int e_order,
+                                   const int order)
+{
+  int i_order = order;
+
+  if(order<1 && e_order>0)
+    i_order = 1;
+
+  if(e_type == HEXAHEDRAL || e_type == QUADRILATERAL)
+    i_order = 1;
+
+  switch(e_type){
+    case LINE:
+      return number_of_integration_points_line(i_order);
+    case TRIANGLE:
+      return number_of_integration_points_tri(i_order);
+    case QUADRILATERAL:
+      return number_of_integration_points_quad(i_order);
+    case TETRAHEDRON:
+      return number_of_integration_points_tet(i_order);
+    case HEXAHEDRAL:
+      return number_of_integration_points_hex(i_order);
+    default:
+      PGFEM_printerr("ERROR: element type %d is not yet implemented for finite element integration.\n", e_type);
+      PGFEM_Abort();
+  }
 }
 
 void
@@ -102,21 +146,18 @@ FEMLIB::initialization(int e_type, int i_order, int nne)
   this->elem_type = e_type;
   this->intg_order = i_order;
 
-  if(i_order<1)
-  {
-    if(nne==QTETRAHEDRON)
-      i_order = 1;
-    if(nne==HEXAHEDRAL)
-      i_order = 1;
-  }
+  int e_order = 0;
 
-  nint = this->determine_integration_type(e_type, i_order);
-  this->nint = nint;
+  if(nne==QTETRAHEDRON)
+    e_order = 1;
 
-  this->ksi.initialization(nint,1);
-  this->eta.initialization(nint,1);
-  this->zet.initialization(nint,1);
-  this->weights.initialization(nint,1);
+  this->nint = this->determine_integration_type(e_type, e_order, i_order);
+
+  this->ksi.initialization(this->nint,1);
+  this->eta.initialization(this->nint,1);
+  this->zet.initialization(this->nint,1);
+  this->weights.initialization(this->nint,1);
+
   this->N.initialization(nne ,1);
   this->dN.initialization(nne ,nsd);
   this->x_ip.initialization(nsd ,1);
@@ -435,4 +476,40 @@ FEMLIB::~FEMLIB()
     dealoc4(ST_tensor,3,3,nsd);
   if(ST != NULL)
     PGFEM_free(ST);
+}
+
+int nne_2D(const int nne_3D){
+  switch(nne_3D){
+  case 4:  // Tet --> Tri
+    return 3;
+  case 10: // qTet ->> qTri
+    return 6;
+  case 8: // Hex --> quad
+    return 4;
+  default:
+    PGFEM_printerr("WARNING: unrecognized element type for 2D femlib: %s:%s:%d\n",
+                     __func__,__FILE__,__LINE__);
+      break;
+  }
+}
+
+void
+FemLib2D::initialization(const FEMLIB *fe,
+                         const int face_id)
+{
+  this->fe3D = fe;
+
+  int int_order = 1;
+
+  if(this->fe3D->nne == 10)
+    int_order = 2;
+
+  this->nne = nne_2D(this->fe3D->nne);
+
+  Matrix<double> ksi_3D;
+  integrate_surface(this->fe3D->nne, face_id, int_order,
+                    &(this->nint),&ksi_3D,&eta_3D,&zet_3D,
+                               &ksi_2D,&eta_2D,&wt_2D,
+                               &nne_2D,&nod_2D);
+
 }

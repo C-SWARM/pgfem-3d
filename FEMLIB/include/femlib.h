@@ -92,4 +92,18 @@ class FEMLIB
   double elem_volume(void);
 };
 
+class FemLib2D : public FEMLIB{
+public:
+  FEMLIB *fe3D;
+
+  FemLib2D(){};
+  FemLib2D(const FEMLIB *fe){
+    initialization(fe);
+  };
+
+  void initialization(const FEMLIB *fe,
+                      const int face_id);
+
+};
+
 #endif // #define FEMLIB_FEMLIB_H

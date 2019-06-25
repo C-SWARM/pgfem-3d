@@ -23,6 +23,13 @@
 //#include "pgfem3d/MultiscaleCommon.hpp"
 #include <vector>
 
+/// Carrying Neumann boundary (NB) conditions for Multiphysics problems
+class NeumannBoundaryElement{
+  public:
+    Matrix<int> element_ids; //!< list of elements for NB
+    Matrix<int> features;    //!< geometry features for NB
+};
+
 /// Time stepping struct
 /// Has time stepping information
 struct TimeStepping {
@@ -52,6 +59,8 @@ struct Grid {
   Element *element;          //!< list of element
   BoundingElement *b_elems;  //!< list of bounding element
   COEL *coel;                //!< list of cohesive elements
+  Matrix<NeumannBoundaryElement> NBE; //!< list of Neumann boundary condition element
+                                      //!< as many as number of physics
 };
 
 /// Variables for three-field mixed method
