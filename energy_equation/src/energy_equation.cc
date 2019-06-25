@@ -772,7 +772,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
                                            Solver *sol,
                                            LoadingSteps *load,
                                            const CommunicationStructure *com,
-                                           int *Ddof,
+                                           long *Ddof,
                                            int interior,
                                            const PGFem3D_opt *opts,
                                            int mp_id,
@@ -1030,7 +1030,7 @@ int energy_equation_compute_stiffness(Grid *grid,
     err++;
   }
 
-  Matrix<int> Ddof(com->nproc,1);
+  Matrix<long> Ddof(com->nproc,1);
 
   Ddof.m_pdata[0] = com->DomDof[0];
   for (int ia=1; ia<com->nproc; ia++)

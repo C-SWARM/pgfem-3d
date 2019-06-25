@@ -90,7 +90,7 @@ int compute_LHS_RHS_pK_elem(FEMLIB *fe,
                             const Solver *sol,
                             const LoadingSteps *load,
                             const CommunicationStructure *com,
-                            int *Ddof,
+                            long *Ddof,
                             const int myrank,
                             const int interior,
                             const PGFem3D_opt *opts,
@@ -291,7 +291,7 @@ int compute_LHS_and_RHS_of_pK(const Grid *grid,
   double **Lk,**recieve;
   com->spc->post_stiffmat(&Lk,&recieve);
   
-  Matrix<int> Ddof(com->nproc,1);
+  Matrix<long> Ddof(com->nproc,1);
 
   Ddof.m_pdata[0] = com->DomDof[0];
   for (int ia=1; ia<com->nproc; ia++)

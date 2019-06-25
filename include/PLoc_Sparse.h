@@ -25,7 +25,7 @@ void PLoc_Sparse (double **Lk,
                   long *cnL, /**< UNUSED */
                   long *cnG,
                   long ndofe,
-                  int *Ddof, /**< UNUSED */
+                  long *Ddof, /**< UNUSED */
                   long GDof, /**< UNUSED */
 		  int myrank,
 		  int nproc,
@@ -43,7 +43,7 @@ void PLoc_Sparse_rec (double **Lk,
                       long *cnG_col,
                       long nrow,
                       long ncol,
-                      int *Ddof,
+                      long *Ddof,
                       long GDof,
 		      int myrank,
 		      int nproc,
