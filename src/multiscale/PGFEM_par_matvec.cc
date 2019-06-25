@@ -32,7 +32,7 @@ static inline void set_entry(const int row,
                  const int col,
                  const double val,
                  entry *e);
-static inline void destroy_entry(entry *e);
+// static inline void destroy_entry(entry *e);
 static inline void destroy_entries(const int n_entry,
                    entry *e);
 static int compare_entry_row(const void *a, const void *b);
@@ -75,9 +75,9 @@ typedef struct comm_ctx{
   Status *s_stat;
 } comm_ctx;
 static int build_comm_ctx(const int n_send,
-			  const int n_recv,
-			  comm_ctx *COMM,
-			  Network *net);
+              const int n_recv,
+              comm_ctx *COMM,
+              Network *net);
 static void destroy_comm_ctx(comm_ctx *COMM);
 
 /*=== LOC UTILS ===*/
@@ -143,7 +143,7 @@ int initialize_PGFEM_par_matrix(const int n_rows,
                 const int n_entries,
                 const int *row_idx,
                 const int *col_idx,
-		CommunicationStructure *com,
+        CommunicationStructure *com,
                 PGFEM_par_matrix **mat)
 {
   int err = 0;
@@ -151,7 +151,7 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   int nproc = com->nproc;
 
   ISIRNetwork *net = static_cast<ISIRNetwork*>(com->net);
-  
+
   if(myrank == 0) LOG_MSG("Entering initialization.");
 
   /* allocate the object and get alias */
@@ -163,7 +163,7 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   m->com->rank = myrank;
   m->com->nproc = nproc;
   m->com->net = com->net;
-  
+
   /* set internal variables */
   /* duplicate communicator to get unique context. Allows simultaneous
      assembly of multiple matrices without comm errors */
@@ -196,10 +196,10 @@ int initialize_PGFEM_par_matrix(const int n_rows,
     {
       int req_idx = 0;
       for(int i=0; i<nproc; i++){
-	if(i == myrank) continue;
-	net->irecv(&r_off_proc_rows[i],1,NET_DT_INT,i,NET_ANY_TAG,
-		   m->com->comm,&r_req[req_idx]);
-	req_idx++;
+    if(i == myrank) continue;
+    net->irecv(&r_off_proc_rows[i],1,NET_DT_INT,i,NET_ANY_TAG,
+           m->com->comm,&r_req[req_idx]);
+    req_idx++;
       }
     }
   }
@@ -207,7 +207,7 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   /* gather n_own_rows on all processes and compute the idx_starts */
   m->n_own_rows[myrank] = n_own_rows;
   net->allgather(NET_IN_PLACE,1,NET_DT_INT,m->n_own_rows,
-		 1,NET_DT_INT,m->com->comm);
+         1,NET_DT_INT,m->com->comm);
   m->idx_starts[0] = 0;
   for(int i=1; i<=nproc; i++){
     m->idx_starts[i] = m->idx_starts[i-1] + m->n_own_rows[i-1];
@@ -228,14 +228,14 @@ int initialize_PGFEM_par_matrix(const int n_rows,
     int idx = 0;
     for(int i=1; i<n_entries; i++){
       if(e[i].row <= e[idx].row){
-	e[i].row = -1;
-	n_dup++;
+    e[i].row = -1;
+    n_dup++;
       } else {
-	idx = i;
+    idx = i;
       }
     }
   }
-  
+
   /* sort entries, duplicates are first */
   qsort(e,n_entries,sizeof(entry),compare_entry_row);
 
@@ -248,10 +248,10 @@ int initialize_PGFEM_par_matrix(const int n_rows,
     int idx = n_dup;
     for(int i=0; i<nproc; i++){
       while(idx < n_entries){
-	/* break loop if row owned by other dom */
-	if(e[idx].row >= m->idx_starts[i+1]) break;
-	s_off_proc_rows[i] ++;
-	idx ++;
+    /* break loop if row owned by other dom */
+    if(e[idx].row >= m->idx_starts[i+1]) break;
+    s_off_proc_rows[i] ++;
+    idx ++;
       }
     }
   }
@@ -267,7 +267,7 @@ int initialize_PGFEM_par_matrix(const int n_rows,
     for(int i=0; i<nproc; i++){
       if(i == myrank) continue;
       net->isend(s_off_proc_rows + i,1,NET_DT_INT,i,i /*tag*/,
-		 m->com->comm,&s_req[req_idx]);
+         m->com->comm,&s_req[req_idx]);
       req_idx++;
     }
   }
@@ -284,7 +284,7 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   off_proc_entries *s_rows = (off_proc_entries*) m->s_rows;
   for(int i=0; i<send_info->nproc; i++){
     err += build_off_proc_entries(send_info->n_info[i],
-				  m->n_cols,s_rows+i);
+                  m->n_cols,s_rows+i);
   }
 
   /* set the row_loc_ids */
@@ -295,8 +295,8 @@ int initialize_PGFEM_par_matrix(const int n_rows,
       int off_proc_start = m->idx_starts[send_info->proc[i]];
       while(e[ent_idx].row < off_proc_start) ent_idx++;
       for(int j=0; j<send_info->n_info[i]; j++){
-	s_rows[i].row_loc_ids[j] = e[ent_idx].row - off_proc_start;
-	ent_idx++;
+    s_rows[i].row_loc_ids[j] = e[ent_idx].row - off_proc_start;
+    ent_idx++;
       }
     }
   }
@@ -350,13 +350,13 @@ int initialize_PGFEM_par_matrix(const int n_rows,
   /* post receive */
   for(int i=0; i<recv_info->nproc; i++){
     net->irecv(r_rows[i].row_loc_ids,recv_info->n_info[i],NET_DT_INT,
-	       recv_info->proc[i],NET_ANY_TAG,m->com->comm,&r_req[i]);
+           recv_info->proc[i],NET_ANY_TAG,m->com->comm,&r_req[i]);
   }
 
   /* post send */
   for(int i=0; i<send_info->nproc; i++){
     net->isend(s_rows[i].row_loc_ids,send_info->n_info[i],NET_DT_INT,
-	       send_info->proc[i],i /*tag*/,m->com->comm,&s_req[i]);
+           send_info->proc[i],i /*tag*/,m->com->comm,&s_req[i]);
   }
 
   /* complete communication */
@@ -458,7 +458,7 @@ int PGFEM_par_matrix_set_values(const int n_entries,
   if(e[0].row < mat->idx_starts[proc_order[0]] ||
      e[n_entries-1].row >= mat->idx_starts[proc_order[send->nproc]+1]){
     PGFEM_printerr("[%d]ERROR: invalid row! %s:%s:%d\n",
-		   myrank,__func__,__FILE__,__LINE__);
+           myrank,__func__,__FILE__,__LINE__);
     PGFEM_Comm_code_abort(mat->com, 0);
   }
 
@@ -518,8 +518,8 @@ int PGFEM_par_matrix_add_to_values(const int n_entries,
 
   entry *e = NULL;
   err += get_sorted_list_of_entries(n_entries,row_idx,
-				    col_idx,values,&e);
-  
+                    col_idx,values,&e);
+
   /* get aliases to send information */
   comm_info *send = (comm_info *) mat->send_info;
   off_proc_entries *s_rows = (off_proc_entries *) mat->s_rows;
@@ -541,7 +541,7 @@ int PGFEM_par_matrix_add_to_values(const int n_entries,
   if(e[0].row < mat->idx_starts[proc_order[0]] ||
      e[n_entries-1].row >= mat->idx_starts[proc_order[send->nproc]+1]){
     PGFEM_printerr("[%d]ERROR: invalid row! %s:%s:%d\n",
-		   myrank,__func__,__FILE__,__LINE__);
+           myrank,__func__,__FILE__,__LINE__);
     PGFEM_Comm_code_abort(mat->com, 0);
   }
 
@@ -614,12 +614,12 @@ int PGFEM_par_matrix_zero_values(PGFEM_par_matrix *mat)
 }
 
 int PGFEM_par_matrix_start_assembly(PGFEM_par_matrix *mat,
-				    PGFEM_par_matrix_comm *comm)
+                    PGFEM_par_matrix_comm *comm)
 {
   int err = 0;
 
   ISIRNetwork *net = static_cast<ISIRNetwork*>(mat->com->net);
-  
+
   /* allocate a communication context */
   *comm = PGFEM_calloc(comm_ctx, 1);
   comm_info *send = (comm_info *) mat->send_info;
@@ -632,7 +632,7 @@ int PGFEM_par_matrix_start_assembly(PGFEM_par_matrix *mat,
   for(int i=0; i<recv->nproc; i++){
     int len = recv->n_info[i]*mat->n_cols;
     net->irecv(r_rows[i].data,len,NET_DT_DOUBLE,recv->proc[i],
-	       NET_ANY_TAG,mat->com->comm,&COMM->r_req[i]);
+           NET_ANY_TAG,mat->com->comm,&COMM->r_req[i]);
   }
 
   /* post the sends */
@@ -640,7 +640,7 @@ int PGFEM_par_matrix_start_assembly(PGFEM_par_matrix *mat,
   for(int i=0; i<send->nproc; i++){
     int len = send->n_info[i]*mat->n_cols;
     net->isend(s_rows[i].data,len,NET_DT_DOUBLE,send->proc[i],
-	       i /*tag*/,mat->com->comm,&COMM->s_req[i]);
+           i /*tag*/,mat->com->comm,&COMM->s_req[i]);
   }
 
   return err;
@@ -655,11 +655,11 @@ int PGFEM_par_matrix_end_assembly(PGFEM_par_matrix *mat,
   comm_info *recv = (comm_info *) mat->recv_info;
 
   ISIRNetwork *net = static_cast<ISIRNetwork*>(mat->com->net);
-  
+
   /* finish communication */
   net->waitall(recv->nproc,COMM->r_req,COMM->r_stat);
   net->waitall(send->nproc,COMM->s_req,COMM->s_stat);
-  
+
   if(mat->add_values){
     err += add_assemble_matrix(mat);
   } else {
@@ -698,7 +698,7 @@ int PGFEM_par_matrix_get_column(const PGFEM_par_matrix *mat,
 int PGFEM_par_vec_dot(const int len,
               const double *vec_a,
               const double *vec_b,
-	      CommunicationStructure *com,
+          CommunicationStructure *com,
               double *result)
 {
   int err = 0;
@@ -706,7 +706,7 @@ int PGFEM_par_vec_dot(const int len,
 
   try {
     com->net->allreduce(NET_IN_PLACE,result,1,NET_DT_DOUBLE,
-			NET_OP_SUM,com->comm);
+            NET_OP_SUM,com->comm);
   } catch(...) {
     err += 1;
   }
@@ -835,7 +835,7 @@ static inline void set_entry(const int row,
   e->val = val;
 }
 
-static inline void destroy_entry(entry *e){}
+// static inline void destroy_entry(entry *e){}
 static inline void destroy_entries(const int n_entry,
                    entry *e)
 {
@@ -926,9 +926,9 @@ static void destroy_off_proc_entries(off_proc_entries *info)
 }
 
 static int build_comm_ctx(const int n_send,
-			  const int n_recv,
-			  comm_ctx *COMM,
-			  Network *net)
+              const int n_recv,
+              comm_ctx *COMM,
+              Network *net)
 {
   int err = 0;
   COMM->r_req = NULL;
