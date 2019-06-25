@@ -79,7 +79,7 @@ int vol_damage_int_alg(const int ne,
                        const SUPP sup,
                        const double dt,
                        const int iter,
-		       const CommunicationStructure *com,
+               const CommunicationStructure *com,
                        EPS *eps,
                        SIG *sig,
                        double *max_omega,
@@ -211,7 +211,7 @@ int vol_damage_int_alg(const int ne,
                                  disp,eps,sup,0,Na,N_x,N_y,N_z,ST,F,C,&J,
                                  &wt,analysis);
 
-          damage *ptrDam = &(eps[elem_id].dam[ip]);
+          Damage *ptrDam = &(eps[elem_id].dam[ip]);
 
           double Ybar = 0.0;
           err += get_material_potential(&Ybar,elem_id,ip,nne,kappa,Na,C,J,
@@ -220,7 +220,7 @@ int vol_damage_int_alg(const int ne,
           damage_int_alg(ptrDam,Ybar,dt /* ,iter */);
 
           if(VD_INT_ALG_DEBUG){
-	    int myrank = com->rank;
+        int myrank = com->rank;
             PGFEM_printerr("[%d] (elem,ip)::(%d,%d) wn+1 || Xn+1 || g\n"
                            "%1.12e || %1.12e\n",myrank,elem_id,ip,
                            ptrDam->w,ptrDam->X);
@@ -263,7 +263,7 @@ int vol_damage_int_alg(const int ne,
                                    disp,eps,sup,1,Na,N_x,N_y,N_z,ST,F,C,&J,
                                    &wt,analysis);
 
-            damage *ptrDam = &(eps[elem_id].st[ip].dam);
+            Damage *ptrDam = &(eps[elem_id].st[ip].dam);
 
             double Ybar = 0.0;
             err += get_material_potential(&Ybar,elem_id,ip,nne,kappa,Na,C,J,
