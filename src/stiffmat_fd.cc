@@ -36,6 +36,7 @@
 #include "utils.h"
 #include <mkl_cblas.h>
 #include <cassert>
+#include <limits>
 
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
@@ -278,6 +279,7 @@ static int bnd_el_stiffmat(int belem_id,
 
   /* get the local and global dof id's */
   int ndof_ve = get_ndof_on_bnd_elem(node,ptr_be,elem,ndofn);
+  assert(0 < ndof_ve and ndof_ve <= std::numeric_limits<int>::max());
 
   long *cn_ve = aloc1l(ndof_ve);
   long *Gcn_ve = aloc1l(ndof_ve);
