@@ -13,8 +13,8 @@
 #ifndef _PLASTICITY_MODEL_BPA_H
 #define _PLASTICITY_MODEL_BPA_H
 
-struct Constitutive_model;
-struct Model_var_info;
+class Constitutive_model;
+class Model_var_info;
 struct HOMMAT;
 
 /**

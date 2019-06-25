@@ -9,7 +9,7 @@
 #include "volumetric_damage.h"
 #include <stdio.h>
 
-struct Constitutive_model;
+class Constitutive_model;
 
 /** Structure of strains EPS */
 struct IL0_eps { /* Inelastic strain in all integration points */

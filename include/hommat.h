@@ -3,11 +3,11 @@
 #ifndef HOMMAT_H
 #define HOMMAT_H
 
-struct Model_parameters;
-#ifndef TYPE_Model_parameters
-#define TYPE_Model_parameters
-typedef struct Model_parameters Model_parameters;
-#endif
+class Model_parameters;
+/* #ifndef TYPE_Model_parameters */
+/* #define TYPE_Model_parameters */
+/* typedef class Model_parameters Model_parameters; */
+/* #endif */
 
 /** Structure of material matrices */
 struct HOMMAT{
@@ -23,8 +23,8 @@ struct HOMMAT{
   int devPotFlag;
   int volPotFlag;
   int mat_id; // material ID
-  
-  Model_parameters *param; // model parameters constitutive model dependent  
+
+  Model_parameters *param; // model parameters constitutive model dependent
 };
 #ifndef TYPE_HOMMAT
 #define TYPE_HOMMAT
