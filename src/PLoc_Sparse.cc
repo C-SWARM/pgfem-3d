@@ -18,7 +18,7 @@ void PLoc_Sparse (double **Lk,
                   int *Ap,
                   long *cnL,
                   long *cnG,
-                  long ndofe,
+                  long ndofe,      // should be int
                   long *Ddof,
                   long GDof,
                   int myrank,
@@ -34,20 +34,22 @@ void PLoc_Sparse (double **Lk,
   int ncols = 0;
   int nsend = 0;
 
-  int *gDofID, *send, *rows, *cols;
+  SparseSystem::Index *gDofID; 
+  int *send, *rows, *cols;
 
   /* The element stiffness matrix is by definition ndofe x ndofe,
      therefore we start with that many rows and columns and subtract
      rows if there is a BC (gDofID < 0) or if the dof is in another
      domain.  Columns are only removed if there is a BC on the dof. */
 
-  gDofID = aloc1i(ndofe);
+  gDofID = aloc1l(ndofe);
   send = aloc1i(ndofe);
   rows = aloc1i(ndofe);
   cols = aloc1i(ndofe);
 
-  for(int i=0; i< (int) ndofe;i++){
-    gDofID[i] = (int) (cnG[i] - 1);
+
+  for(int i = 0; i < (int) ndofe; ++i){
+    gDofID[i] = cnG[i] - 1;                 // varies bewtween: negative < cnG < long 
     if(gDofID[i] < 0){
       continue;
     }
@@ -84,10 +86,10 @@ void PLoc_Sparse (double **Lk,
     values = aloc1(1);
   }
 
-  for(int i=0; i<nrows; i++){
+  for(int i = 0; i < nrows; ++i){
     row_idx[i] = gDofID[rows[i]];
     n_cols[i] = ncols;
-    for(int j=0; j<ncols; j++){
+    for(int j = 0; j < ncols; ++j){
       values[i*ncols + j] = lk[rows[i]*ndofe + cols[j]];
       col_idx[i*ncols + j] = gDofID[cols[j]];
     }
@@ -140,7 +142,7 @@ void PLoc_Sparse (double **Lk,
 
   /* Add to the send portion */
   for(int i=0; i<nsend; i++){
-    long gID = (long) gDofID[send[i]];
+    long gID = gDofID[send[i]];
     long proc = 0;
     long srow_id = 0;
     long s_nnz = 0;
@@ -157,8 +159,8 @@ void PLoc_Sparse (double **Lk,
     for(long j=0; j<srow_id; j++){
       s_nnz += comm->SAp[proc][j];
     }
-    for(int j=0; j<ncols; j++){
-      gID = (long) gDofID[cols[j]];
+    for(int j = 0; j < ncols; ++j){
+      gID = gDofID[cols[j]];
       for(long k=0; k<comm->SAp[proc][srow_id]; k++){
         if(gID == comm->SGRId[proc][s_nnz+k]){
           Lk[proc][s_nnz+k] += lk[send[i]*ndofe +cols[j]];
@@ -202,8 +204,8 @@ void PLoc_Sparse_rec (double **Lk,
      prescribed by a boundary condition. Columns are only removed if
      the DOF is prescribed by a BC. */
 
-  int *G_row_id = aloc1i(nrow);
-  int *G_col_id = aloc1i(ncol);
+  SparseSystem::Index *G_row_id = aloc1l(nrow);
+  SparseSystem::Index *G_col_id = aloc1l(ncol);
   int *send = aloc1i(nrow);
   int *rows = aloc1i(nrow);
   int *cols = aloc1i(ncol);
