@@ -232,9 +232,6 @@ namespace pgfem3d {
                  const long ndofd, const long *DomDof,
                  const long GDof)
   {
-    assert(ndofd > 0);
-    assert(GDof >= 0);
-
     long i,j,KK;
     double **snd,**rcv;
     Status *sta_s,*sta_r;
@@ -326,9 +323,6 @@ namespace pgfem3d {
   void ISIR_SparseComm::GToL(const double *Gr, double *r,
                  const long ndofd, const long GDof)
   {
-    assert(ndofd > 0);
-    assert(GDof >= 0);
-
     long i,j,KK;
     double **snd,**rcv;
     Status *sta_s,*sta_r;
