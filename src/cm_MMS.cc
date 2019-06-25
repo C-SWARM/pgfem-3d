@@ -1,8 +1,8 @@
 /// Define poro-visco plasticity model functions for the constitutive model interface
-/// 
+///
 /// Authors:
 /// Sangmin Lee, [1], <slee43@nd.edu>
-/// 
+///
 /// [1] University of Notre Dame, Notre Dame, IN
 
 #include "cm_MMS.h"
@@ -45,22 +45,22 @@ namespace {
   /// Only dealing with 3 dimensional double data, but it is sometimes const.
   template <int R, class S = double>
   using Tensor = ttl::Tensor<R, 3, S>;
-    
+
   template <int R, class S = double *>
-  using TensorA = ttl::Tensor<R, 3, S>;  
-  
+  using TensorA = ttl::Tensor<R, 3, S>;
+
   template <int R, class S = double>
   using Tensor9x9 = ttl::Tensor<R, 9, S>;
-  
+
   template <int R>
   using Delta = ttl::Tensor<R, 3, double>;
-  
+
   template<class T1, class T2> int inv(T1 &A, T2 &AI)
   {
     int err = inv3x3(A.data, AI.data);
     return err;
-  }   
-  
+  }
+
   // ttl indexes
   static constexpr ttl::Index<'i'> i;
   static constexpr ttl::Index<'j'> j;
@@ -85,13 +85,13 @@ enum tensor_names {
   TENSOR_pFnm1,
   TENSOR_end
 };
-          
 
-void MMS4cm_pF(double *pF, 
-               const double t, 
-               const double X, 
-               const double Y, 
-               const double Z, 
+
+void MMS4cm_pF(double *pF,
+               const double t,
+               const double X,
+               const double Y,
+               const double Z,
                const double *c);
 
 int CM_MMS_PARAM::integration_algorithm(Constitutive_model *m,
@@ -103,10 +103,10 @@ const
   int err = 0;
 
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
-  
+
   double c[6] = {10.0, 0.5, 1000.0, 1.0, 0.7, -50.0};
   MMS4cm_pF(Fs[TENSOR_pFnp1].m_pdata, t, x[0], x[1], x[2], c);
-  
+
   memcpy(Fs[TENSOR_Fnp1].m_pdata, cm_ctx.F, DIM_3x3*sizeof(double));
   return err;
 }
@@ -119,26 +119,26 @@ int CM_MMS_PARAM::update_elasticity(const Constitutive_model *m,
 const
 {
   int err = 0;
-  
+
   double *L = NULL;
   if(compute_stiffness)
     L = L_in;
-  
+
   if(cm_ctx.eFnpa)
     err += constitutive_model_default_update_elasticity(m, cm_ctx.eFnpa, L, S, compute_stiffness);
   else
   {
     // shorthand of deformation gradients
-    Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;  
+    Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
 
     TensorA<2> pFnp1(Fs[TENSOR_pFnp1].m_pdata), Fnp1(Fs[TENSOR_Fnp1].m_pdata);
 
-    Tensor<2> pFnp1_I, eF;    
-    err += inv(pFnp1, pFnp1_I);    
+    Tensor<2> pFnp1_I, eF;
+    err += inv(pFnp1, pFnp1_I);
     eF(i,j) = Fnp1(i,k)*pFnp1_I(k,j);
 
-    err += constitutive_model_default_update_elasticity(m, eF.data, L, S, compute_stiffness);          
-  }     
+    err += constitutive_model_default_update_elasticity(m, eF.data, L, S, compute_stiffness);
+  }
   return err;
 }
 
@@ -148,7 +148,7 @@ const
 {
   int err = 0;
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
-  Fs[TENSOR_Fnm1] = Fs[TENSOR_Fn];    
+  Fs[TENSOR_Fnm1] = Fs[TENSOR_Fn];
   Fs[TENSOR_Fn]   = Fs[TENSOR_Fnp1];
   Fs[TENSOR_pFnm1]= Fs[TENSOR_pFn];
   Fs[TENSOR_pFn]  = Fs[TENSOR_pFnp1];
@@ -162,25 +162,25 @@ const
   int err = 0;
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   Fs[TENSOR_Fnp1]  = Fs[TENSOR_Fn];
-  Fs[TENSOR_pFnp1] = Fs[TENSOR_pFn];  
+  Fs[TENSOR_pFnp1] = Fs[TENSOR_pFn];
 
   return err;
 }
 
 int CM_MMS_PARAM::get_var_info(Model_var_info &info)
-const 
+const
 {
-  const CMVariableNames variable_names[] = {};
+  const CMVariableNames *variable_names = nullptr; // [] = {};
 
-  const CMVariableNames tensor_names[] = {{TENSOR_Fn   , "Fn"   }, 
-                                          {TENSOR_pFn  , "pFn"  },  
-                                          {TENSOR_Fnp1 , "Fnp1" }, 
+  const CMVariableNames tensor_names[] = {{TENSOR_Fn   , "Fn"   },
+                                          {TENSOR_pFn  , "pFn"  },
+                                          {TENSOR_Fnp1 , "Fnp1" },
                                           {TENSOR_pFnp1, "pFnp1"},
-                                          {TENSOR_Fnm1 , "Fnm1" }, 
+                                          {TENSOR_Fnm1 , "Fnm1" },
                                           {TENSOR_pFnm1, "pFnm1"},
                                          };
 
-  const CMVariableNames flag_names[] = {};                                       
+  const CMVariableNames *flag_names = nullptr; // [] = {};
   int err = constitutive_model_info(info, VAR_end,    variable_names,
                                           TENSOR_end, tensor_names,
                                           FLAG_end,   flag_names);
@@ -190,7 +190,7 @@ const
 int CM_MMS_PARAM::get_pF(const Constitutive_model *m,
                          double *F,
                          const int stepno)
-const 
+const
 {
   int err = 0;
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
@@ -201,10 +201,10 @@ const
       break;
     case 1: // n
       memcpy(F,Fs[TENSOR_pFn].m_pdata,  DIM_3x3*sizeof(double));
-      break;      
+      break;
     case 2: // n+1
       memcpy(F,Fs[TENSOR_pFnp1].m_pdata,DIM_3x3*sizeof(double));
-      break;      
+      break;
     default:
       PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
       err++;
@@ -216,7 +216,7 @@ const
 int CM_MMS_PARAM::get_F(const Constitutive_model *m,
                         double *F,
                         const int stepno)
-const 
+const
 {
   State_variables *sv = m->vars_list[0] + m->model_id;
   return sv->get_F(F, TENSOR_Fnm1, TENSOR_Fn, TENSOR_Fnp1, stepno);
@@ -239,26 +239,26 @@ const
   int err = 0;
   Tensor<2> pFI;
   TensorA<2> eF(eF_in);
-  
+
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   switch(stepno)
   {
     case 0: // n-1
-    {  
+    {
       TensorA<2> pF(Fs[TENSOR_pFnm1].m_pdata), F(Fs[TENSOR_Fnm1].m_pdata);
       inv(pF, pFI);
       eF = F(i,k)*pFI(k,j);
       break;
     }
     case 1: // n
-    {  
+    {
       TensorA<2> pF(Fs[TENSOR_pFn].m_pdata), F(Fs[TENSOR_Fn].m_pdata);
       inv(pF, pFI);
       eF = F(i,k)*pFI(k,j);
       break;
     }
     case 2: // n+1
-    {  
+    {
       TensorA<2> pF(Fs[TENSOR_pFnp1].m_pdata), F(Fs[TENSOR_Fnp1].m_pdata);
       inv(pF, pFI);
       eF = F(i,k)*pFI(k,j);
@@ -282,26 +282,26 @@ const
   int err = 0;
   Tensor<2> pFI;
   TensorA<2> eF(eF_in), hFI(hFI_in);
-  
+
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
   switch(stepno)
   {
     case 0: // n-1
-    {  
+    {
       TensorA<2> pF(Fs[TENSOR_pFnm1].m_pdata), F(Fs[TENSOR_Fnm1].m_pdata);
       inv(pF, pFI);
       eF = F(i,k)*hFI(k,l)*pFI(l,j);
       break;
     }
     case 1: // n
-    {  
+    {
       TensorA<2> pF(Fs[TENSOR_pFn].m_pdata), F(Fs[TENSOR_Fn].m_pdata);
       inv(pF, pFI);
-      eF = F(i,k)*hFI(k,l)*pFI(l,j);      
+      eF = F(i,k)*hFI(k,l)*pFI(l,j);
       break;
     }
     case 2: // n+1
-    {  
+    {
       TensorA<2> pF(Fs[TENSOR_pFnp1].m_pdata), F(Fs[TENSOR_Fnp1].m_pdata);
       inv(pF, pFI);
       eF = F(i,k)*hFI(k,l)*pFI(l,j);
@@ -313,10 +313,10 @@ const
   }
   assert(err == 0);
 
-  return err;      
+  return err;
 }
 
-int CM_MMS_PARAM::reset_state_vars_using_temporal(const Constitutive_model *m, 
+int CM_MMS_PARAM::reset_state_vars_using_temporal(const Constitutive_model *m,
                                                   State_variables *var)
 const {
   int err = 0;
@@ -330,17 +330,17 @@ const {
     Fs[TENSOR_Fnm1 ].m_pdata[ia] = Fs_in[TENSOR_Fnm1 ].m_pdata[ia];
     Fs[TENSOR_pFnm1].m_pdata[ia] = Fs_in[TENSOR_pFnm1].m_pdata[ia];
   }
-    
+
   return err;
 }
 
-int CM_MMS_PARAM::update_np1_state_vars_to_temporal(const Constitutive_model *m, 
+int CM_MMS_PARAM::update_np1_state_vars_to_temporal(const Constitutive_model *m,
                                                     State_variables *var)
 const{
   int err = 0;
   Matrix<double> *Fs    = var->Fs;
   Matrix<double> *Fs_in = m->vars_list[0][m->model_id].Fs;
-    
+
   for(int ia=0; ia<DIM_3x3; ia++)
   {
     Fs[TENSOR_Fnp1 ].m_pdata[ia] = Fs_in[TENSOR_Fnp1 ].m_pdata[ia];
@@ -350,18 +350,18 @@ const{
   return err;
 }
 
-int CM_MMS_PARAM::save_state_vars_to_temporal(const Constitutive_model *m, 
+int CM_MMS_PARAM::save_state_vars_to_temporal(const Constitutive_model *m,
                                               State_variables *var)
 const{
   int err = 0;
   Matrix<double> *Fs_in = m->vars_list[0][m->model_id].Fs;
   Matrix<double> *Fs    = var->Fs;
-  
+
   for(int ia=0; ia<TENSOR_end; ia++){
     for(int ib=0; ib<DIM_3x3; ib++)
       Fs[ia].m_pdata[ib] = Fs_in[ia].m_pdata[ib];
   }
-    
+
   return err;
 }
 
@@ -377,7 +377,7 @@ const
   err += cm_write_tensor_restart(fp, Fs[TENSOR_Fnm1].m_pdata);
   err += cm_write_tensor_restart(fp, Fs[TENSOR_pFn].m_pdata);
   err += cm_write_tensor_restart(fp, Fs[TENSOR_pFnm1].m_pdata);
-  
+
   return err;
 }
 
@@ -385,14 +385,14 @@ int CM_MMS_PARAM::read_restart(FILE *fp, Constitutive_model *m)
 const
 {
   Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
-  
+
   cm_read_tensor_restart(fp, Fs[TENSOR_Fn].m_pdata);
   cm_read_tensor_restart(fp, Fs[TENSOR_Fnm1].m_pdata);
   cm_read_tensor_restart(fp, Fs[TENSOR_pFn].m_pdata);
   cm_read_tensor_restart(fp, Fs[TENSOR_pFnm1].m_pdata);
 
   this->reset_state_vars(m);
-  return 0;  
+  return 0;
 }
 
 int CM_MMS_PARAM::compute_dMdu(const Constitutive_model *m,
@@ -414,7 +414,7 @@ const
   // inital values are set in the more convoluted
   // read_constitutive_model_parameters->plasticity_model_read_parameters
   //   calling sequence
-  
+
   Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
   double F0[DIM_3x3] = {1.0,0.0,0.0,
                         0.0,1.0,0.0,
@@ -432,7 +432,7 @@ const
 int CM_MMS_PARAM::read_param(FILE *in)
 const
 {
-  // there are no parameters to read 
+  // there are no parameters to read
   return scan_for_valid_line(in);
 }
 
