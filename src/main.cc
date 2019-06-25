@@ -61,10 +61,6 @@
 using namespace pgfem3d;
 using namespace pgfem3d::net;
 
-namespace {
-  const constexpr int periodic = 0;
-}
-
 /*****************************************************/
 /*           BEGIN OF THE COMPUTER CODE              */
 /*****************************************************/
