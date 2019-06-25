@@ -34,7 +34,6 @@ void PLoc_Sparse (double **Lk,
   int ncols = 0;
   int nsend = 0;
 
-  SparseSystem::Index *gDofID; 
   int *send, *rows, *cols;
 
   /* The element stiffness matrix is by definition ndofe x ndofe,
@@ -42,7 +41,7 @@ void PLoc_Sparse (double **Lk,
      rows if there is a BC (gDofID < 0) or if the dof is in another
      domain.  Columns are only removed if there is a BC on the dof. */
 
-  gDofID = aloc1l(ndofe);
+  std::vector<SparseSystem::Index> gDofID(ndofe);
   send = aloc1i(ndofe);
   rows = aloc1i(ndofe);
   cols = aloc1i(ndofe);
@@ -173,5 +172,4 @@ void PLoc_Sparse (double **Lk,
   /* free remaining memory */
   PGFEM_free(cols);
   PGFEM_free(send);
-  PGFEM_free(gDofID);
 }
