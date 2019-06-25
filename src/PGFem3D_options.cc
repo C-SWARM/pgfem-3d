@@ -125,7 +125,7 @@ const Option network_opts[] = {
   {{"isir",no_argument,NULL,5},"\tUse Isend/Irecv network (MPI) (default)",0},
   {{"pwc",no_argument,NULL,5},"\tUse put-with-completion (PWC) network (Photon)",0},
 };
-  
+
 const Option vis_opts[] = {
   /* Visualization options */
   {{"vtk",no_argument,NULL,'V'},"Output in VTK format",1},
@@ -156,8 +156,8 @@ const Option other_opts[] = {
   {{"exa-metric",no_argument,NULL,'x'},"\n\t\tPrint exascale metric information.\n",0},
   {{"exa-debug",no_argument,NULL,'x'+9999},"\n\t\tPrint more detailed exascale metric information.\n",0},
   {{"max-pressure",no_argument,NULL,'P'},"\n\t\tCompute and print maximum element pressrue with its position.\n",0},
-  {{"tril_prec_xml",required_argument,NULL,'t'},"Path to xml file containing Trilinos preconditioner settings.\n"},
-  {{"tril_sol_xml",required_argument,NULL,'b'},"Path to xml file containing Trilinos solver settings.\n"}
+  {{"tril_prec_xml",required_argument,NULL,'t'},"Path to xml file containing Trilinos preconditioner settings.\n",0},
+  {{"tril_sol_xml",required_argument,NULL,'b'},"Path to xml file containing Trilinos solver settings.\n",0}
 };
 
 /* these options may no longer be supported/functional. They are kept
@@ -198,7 +198,7 @@ void set_default_options(PGFem3D_opt *options)
 {
   /* network option */
   options->network = NETWORK_ENV;
-  
+
   /* solver options */
   options->solverpackage = HYPRE;
   options->solver = SOLVER_GMRES;
@@ -298,7 +298,7 @@ void print_options(FILE *out, const PGFem3D_opt *options)
   PGFEM_fprintf(out,"Walltime:       %f[s]\n", options->walltime);
   PGFEM_fprintf(out,"Network:        %d\n",options->network);
   PGFEM_fprintf(out,"Exascale:        %d\n",options->print_EXA);
-  
+
   PGFEM_fprintf(out,"\n=== FILE OPTIONS ===\n");
   PGFEM_fprintf(out,"IPath:          %s\n",options->ipath);
   PGFEM_fprintf(out,"OPath:          %s\n",options->opath);
@@ -320,9 +320,9 @@ void print_usage(FILE* out)
   PGFEM_fprintf(out,"\nAnalysis Options:\n");
   for (const auto& opt : analysis_opts) { opt.print(out); }
 
-  PGFEM_fprintf(out,"\nConstitutive Models:\n");  
+  PGFEM_fprintf(out,"\nConstitutive Models:\n");
   print_constitutive_model_info(out);
-  
+
   PGFEM_fprintf(out,"\nNetwork Options:\n");
   for (const auto& opt : network_opts) { opt.print(out); }
   PGFEM_fprintf(out,"\nSolver Options:\n");
@@ -331,7 +331,7 @@ void print_usage(FILE* out)
   for (const auto& opt : precond_opts) { opt.print(out); }
   PGFEM_fprintf(out,"\nVisualization Options:\n");
   for (const auto& opt : vis_opts) { opt.print(out); }
-  print_multiphysics_output_variables(out);    
+  print_multiphysics_output_variables(out);
   PGFEM_fprintf(out,"\nOther Options:\n");
   for (const auto& opt : other_opts) { opt.print(out); }
   PGFEM_fprintf(out,"\nDepricated (ignored) Options:\n");
@@ -442,12 +442,12 @@ void print_interpreted_options(const PGFem3D_opt *opts)
 
   PGFEM_printf ("Network: %s\n",
                 NETWORK_OPTS[opts->network]);
-  
+
   PGFEM_printf ("SolverPackage: %s - %s\n",
                 SOLVER_PACKAGE_OPTS[opts->solverpackage],
                 SOLVER_OPTS[opts->solver]);
 
-  
+
   PGFEM_printf("Preconditioner: ");
   switch (opts->precond) {
   case PRECOND_PARA_SAILS: PGFEM_printf ("HYPRE - PARASAILS\n"); break;
@@ -565,10 +565,10 @@ void re_parse_command_line(const int myrank,
       /* SOLVER OPTIONS */
      case 3:
       if (strcmp("hypre", opts[opts_idx].name) == 0) {
-	options->solverpackage = HYPRE;
+    options->solverpackage = HYPRE;
       }
       if (strcmp("trilinos", opts[opts_idx].name) == 0) {
-	options->solverpackage = TRILINOS;
+    options->solverpackage = TRILINOS;
       }
       if (strcmp("gmres", opts[opts_idx].name) == 0) {
         options->solver = SOLVER_GMRES;
@@ -626,23 +626,23 @@ void re_parse_command_line(const int myrank,
         options->precond = PRECOND_NONE;
       }
       else if (strcmp("pre-ifpack2", opts[opts_idx].name) == 0) {
-	options->precond = PRECOND_IFPACK2;
+    options->precond = PRECOND_IFPACK2;
       }
       else if (strcmp("pre-muelu", opts[opts_idx].name) == 0) {
-	options->precond = PRECOND_MUELU;
+    options->precond = PRECOND_MUELU;
       }
       break;
 
       /* NETWORK OPTIONS */
     case 5:
       if (strcmp("isir", opts[opts_idx].name) == 0) {
-	options->network = NETWORK_ISIR;
+    options->network = NETWORK_ISIR;
       }
       else if(strcmp("pwc", opts[opts_idx].name) == 0) {
         options->network = NETWORK_PWC;
       }
       break;
-      
+
       /* VISUALIZATION OPTIONS */
      case 'V': options->vis_format = VIS_VTK; break;
      case 'A': options->ascii = 1; break;
@@ -705,15 +705,15 @@ void re_parse_command_line(const int myrank,
      case 'M':
       options->comp_print_macro = 0;
       break;
-     
+
      case 'x':
       options->print_EXA = 1;
       break;
-      
+
      case 'x'+9999:
       options->print_EXA = 2;
       break;
-      
+
      case 'P':
       options->comp_print_max_pressure = true;
       break;
@@ -729,7 +729,7 @@ void re_parse_command_line(const int myrank,
      case 'b':
       options->tril_sol_xml = optarg;
       break;
-      
+
      default:
       PGFEM_printf("How did I get here???\n");
       PGFEM_Abort();
