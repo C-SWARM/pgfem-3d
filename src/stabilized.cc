@@ -479,7 +479,7 @@ int resid_st_elem (long ii,
         /* DO NOT free Fn!!! */
         const double *Fn = NULL;
         if (sup->multi_scale){
-	  Fn = identity;
+      Fn = identity;
           Jn = 1.0;
         } else {
           Fn = eps[ii].il[ip].F;
@@ -1005,14 +1005,14 @@ int st_increment (long ne,
                   long nce,
                   COEL *coel,
                   double *pores,
-		  const CommunicationStructure *com,
+          const CommunicationStructure *com,
                   const int coh,
                   const int mp_id)
 {
   static const int ndn = 3;
   int err = 0;
   long ii,nne,*nod,i,j,k,II,M,P,R,ndofe,U,*cn;
-  double *x,*y,*z,*r_e,*r_u,*p,AA[3][3],PL,EL_e,
+  double *x,*y,*z,*r_e,*r_u,*p,AA[3][3],PL,EL_e = 0.0,
   FoN[3][3],pom,BB[3][3],*a,*r_a,*a_a;
   double GEL_e,GPL,Gpores,*LPf,*GPf;
 
