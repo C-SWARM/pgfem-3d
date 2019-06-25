@@ -82,7 +82,7 @@ static void coel_stiffmat(int i, /* coel ID */
                           long *DomDof,
                           long GDof,
                           SparseComm *comm,
-                          int *Ddof,
+                          long *Ddof,
                           int interior,
                           const int analysis,
                           SparseSystem *system,
@@ -251,7 +251,7 @@ static int bnd_el_stiffmat(int belem_id,
                            int nproc,
                            long GDof,
                            SparseComm *comm,
-                           int *Ddof,
+                           long *Ddof,
                            int interior,
                            const int analysis,
                            SparseSystem *system,
@@ -478,7 +478,7 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
 /// \return non-zero on internal error
 static int el_stiffmat_MP(int eid,
                           double **Lk,
-                          int *Ddof,
+                          long *Ddof,
                           int interior,
                           Grid *grid,
                           MaterialProperty *mat,
@@ -697,7 +697,7 @@ int stiffmat_fd_MP(Grid *grid,
     err++;
   }
 
-  Matrix<int> Ddof(com->nproc,1);
+  Matrix<long> Ddof(com->nproc,1);
 
   Ddof.m_pdata[0] = com->DomDof[0];
   for (int ia=1; ia<com->nproc; ia++)
