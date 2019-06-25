@@ -16,7 +16,6 @@
 #endif
 
 namespace {
-const double PII = 3.141592653589793238462643;
 using pgfem3d::Solver;
 using pgfem3d::CommunicationStructure;
 }
@@ -30,7 +29,7 @@ double D_lam_ALM (long ndofd,
           double dlm,
           double dAL,
           long *DomDof,
-	  const CommunicationStructure *com)
+      const CommunicationStructure *com)
 {
   return 0.0;
 }
@@ -117,7 +116,7 @@ double d_lam_ALM4 (long ndofd,
            double *BS_dR,
            double dAL,
            long *DomDof,
-	   const CommunicationStructure *com)
+       const CommunicationStructure *com)
 /*
   SIMO
 */
@@ -133,7 +132,7 @@ double D_lam_ALM4 (long ndofd,
            double dlm,
            double dAL,
            long *DomDof,
-	   const CommunicationStructure *com)
+       const CommunicationStructure *com)
 /*
   SIMO
 */
