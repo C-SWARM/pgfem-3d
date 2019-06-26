@@ -88,7 +88,7 @@ int make_path(const char *path, mode_t mode)
 ///
 /// \param[in] dir_name directory path
 /// \return 1 if input dir_name exists, or 0
-int is_directory_exist(char *dir_name)
+int is_directory_exist(const char *dir_name)
 {
   struct stat sb;
   if(stat(dir_name, &sb) == 0 && S_ISDIR(sb.st_mode))

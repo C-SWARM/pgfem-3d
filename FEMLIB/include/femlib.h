@@ -5,6 +5,23 @@
 #include "element.h"
 #include "node.h"
 
+static const constexpr int LinearElement    = 0;
+static const constexpr int QuadraticElement = 1;
+
+static const constexpr int FemDim0D = 0;
+static const constexpr int FemDim1D = 1;
+static const constexpr int FemDim2D = 2;
+static const constexpr int FemDim3D = 3;
+
+static const constexpr int Tet2Tri[4][3] = {{0,2,1},{0,1,3},{1,2,3},{0,3,2}};
+static const constexpr int QTetQTri[4][6] = {{0,2,1,6,5,4},{0,1,3,4,8,7},{1,2,3,5,9,8},{0,3,2,7,9,6}};
+static const constexpr int Hex2Quad[6][4] = {{3,2,1,0},{7,4,5,6},{0,1,5,4},{2,6,5,1},{3,7,6,2},{3,0,4,7}};
+
+static const constexpr int element_type(const int nne,
+                                        const int dim){
+  return dim*10 + nne;
+}
+
 class TEMP_VARIABLES
 {
  public:
@@ -43,11 +60,10 @@ class FEMLIB
   double *ST;
 
   FEMLIB(){};
-  FEMLIB(int e_type,
-         int i_order,
-         int nne)
-  {
-    initialization(e_type, i_order, nne);
+  FEMLIB(const int nne,
+         const int nsd,
+         const int i_order){
+    initialization(nne, nsd, i_order);
   };
   FEMLIB(int e,
          const Element *elem,
@@ -61,12 +77,13 @@ class FEMLIB
 
   ~FEMLIB();
 
-  long determine_integration_type(int e_type,
-                                  int i_order);
+  long determine_integration_type(const int e_type,
+                                  const int e_order,
+                                  const int i_order);
 
-  void initialization(int e_type,
-                      int i_order,
-                      int nne);
+  void initialization(const int nne,
+                      const int nsd,
+                      const int i_order);
 
   /// set FEM libray by element
   void initialization(int e,
@@ -94,15 +111,18 @@ class FEMLIB
 
 class FemLib2D : public FEMLIB{
 public:
-  FEMLIB *fe3D;
+  const FEMLIB *fe3D;
 
   FemLib2D(){};
-  FemLib2D(const FEMLIB *fe){
-    initialization(fe);
+  FemLib2D(const FEMLIB *fe,
+           const int face_id,
+           const int i_order){
+    initialization(fe, face_id, i_order);
   };
 
   void initialization(const FEMLIB *fe,
-                      const int face_id);
+                      const int face_id,
+                      const int i_order);
 
 };
 
