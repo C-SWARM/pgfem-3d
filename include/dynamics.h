@@ -25,13 +25,13 @@ void DISP_resid_body_force_el(double *f,
                               const double *z,
                               const Element *elem,
                               const HOMMAT *hommat,
-                              const Node *node, 
-                              double dt, 
+                              const Node *node,
+                              double dt,
                               double t,
                               HyperElasticity *elast,
                               bool is4cm);
 
-struct FEMLIB;
+class FEMLIB;
 
 /// compute element residual vector in transient
 ///
@@ -65,7 +65,7 @@ int residual_with_inertia(FEMLIB *fe,
                           int mp_id,
                           double *dts,
                           double t,
-			  int myrank);
+              int myrank);
 
 /// compute element stiffness matrix in transient
 ///

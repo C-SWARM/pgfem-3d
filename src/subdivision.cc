@@ -17,7 +17,6 @@
 
 static constexpr int MAX_STEP = 10000;
 static constexpr double MIN_D_TIME = 1.0e-15;
-static constexpr int periodic = 0;
 
 using namespace pgfem3d;
 using namespace pgfem3d::net;
@@ -272,7 +271,7 @@ double subdiv_arc (long INFO,
                    long iter,
                    long iter_max,
                    long TYPE,
-		   const CommunicationStructure *com,
+           const CommunicationStructure *com,
                    const int analysis)
 {
   long i;

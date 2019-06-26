@@ -89,7 +89,7 @@ EPS* build_eps_il(const long ne,
          pom[i].st = PGFEM_calloc (IL2_eps, JJ);
 
          /* volumetric damage structure */
-         pom[i].dam = PGFEM_calloc (damage, II);
+         pom[i].dam = PGFEM_calloc (Damage, II);
 
          /* Generalized constitutive modeling interface */
          if (analysis == CM || analysis == CM3F) {

@@ -115,7 +115,7 @@ static int get_material_stress(double *devSbar,
 
 /** Compute the material deviatoric tangent (dSdFr) at an integration
     point NOTE: This is not purely the deviatoric part if there is
-    damage */
+    Damage */
 static int get_material_tangent(double *L,
                                 double *SS,
                                 double *Ybar,
@@ -132,7 +132,7 @@ static int get_material_tangent(double *L,
                                 const double Pn,
                                 const double pressure,
                                 const double *devS,
-                                const damage *dam,
+                                const Damage *dam,
                                 const HOMMAT *mat);
 
 /** Compute the pressure at an integration point */
@@ -140,7 +140,7 @@ static int get_material_pres(double *Up,
                              const double Jn,
                              const double Jr,
                              const HOMMAT *mat,
-                             const damage *dam);
+                             const Damage *dam);
 
 /** Compute the linearized pressure term at an integration point */
 static int get_material_lin_pres(double *Upp,
@@ -159,7 +159,7 @@ static int get_Ru_at_ip(double *Ru,
                         const double Jn,
                         const double *devSbar,
                         const double pres,
-                        const damage *dam,
+                        const Damage *dam,
                         const double jj,
                         const double wt);
 
@@ -174,7 +174,7 @@ static int get_Rp_at_ip(double *Rp,
                         const double deltaUp,
                         const double deltaPres,
                         const double P,
-                        const damage *dam,
+                        const Damage *dam,
                         const double jj,
                         const double wt);
 
@@ -188,7 +188,7 @@ static int get_Rp_stab_at_ip(double *Rp,
                              const double Jr,
                              const double *Fr_I,
                              const double stab,
-                             const damage *dam,
+                             const Damage *dam,
                              const double jj,
                              const double wt);
 
@@ -201,7 +201,7 @@ static int get_Kuu_at_ip(double *Kuu,
                          const double *Fr_I,
                          const double Jn,
                          const double Jr,
-                         const damage *dam,
+                         const Damage *dam,
                          const double totalP,
                          const double *devSbar,
                          const double *L,
@@ -218,7 +218,7 @@ static int get_Kup_at_ip(double *Kup,
                          const double Jn_1,
                          const double Jn,
                          const double Jr,
-                         const damage *dam,
+                         const Damage *dam,
                          const double jj,
                          const double wt);
 
@@ -235,7 +235,7 @@ static int get_Kpu_at_ip(double *Kpu,
                          const double UP, /* n+1 only */
                          const double P, /* total pressure */
                          const double *SS,
-                         const damage *dam,
+                         const Damage *dam,
                          const double jj,
                          const double wt);
 
@@ -251,7 +251,7 @@ static int get_Kpp_at_ip(double *Kpp,
                          const double Jn,
                          const double Jr,
                          const double H,
-                         const damage *dam,
+                         const Damage *dam,
                          const double jj,
                          const double wt);
 
@@ -267,7 +267,7 @@ static int get_Kpu_stab_at_ip(double *Kpu,
                               const double *grad_delP,
                               const double *grad_P, /*n+1*/
                               const double stab,
-                              const damage *dam,
+                              const Damage *dam,
                               const double *SS,
                               const double jj,
                               const double wt);
@@ -284,7 +284,7 @@ static int get_Kpp_stab_at_ip(double *Kpp,
                               const double stab,
                               const double *grad_P, /*n+1*/
                               const double Ybar,
-                              const damage *dam,
+                              const Damage *dam,
                               const double jj,
                               const double wt);
 
@@ -479,7 +479,7 @@ int resid_st_elem (long ii,
         /* DO NOT free Fn!!! */
         const double *Fn = NULL;
         if (sup->multi_scale){
-	  Fn = identity;
+      Fn = identity;
           Jn = 1.0;
         } else {
           Fn = eps[ii].il[ip].F;
@@ -487,7 +487,7 @@ int resid_st_elem (long ii,
         }
 
         /* get pointer to damage object */
-        const damage *ptrDam = &eps[ii].dam[ip];
+        const Damage *ptrDam = &eps[ii].dam[ip];
 
         /* compute various objects needed for integration */
         err += integration_help(ip,ii,nne,i,j,k,x,y,z,
@@ -539,7 +539,7 @@ int resid_st_elem (long ii,
           Jn = getJacobian(Fn,ii,&err);
         }
 
-        const damage *ptrDam = &eps[ii].st[ip].dam;
+        const Damage *ptrDam = &eps[ii].st[ip].dam;
 
         /* compute various quantities for integration */
         err += quadradic_integration_help(ip,ii,nne,i,j,k,x,y,z,
@@ -760,7 +760,7 @@ int stiffmatel_st (long ii,
         }
 
         /* get pointer to damage object */
-        const damage *ptrDam = &eps[ii].dam[ip];
+        const Damage *ptrDam = &eps[ii].dam[ip];
 
 
         const double Un_1 = eps[ii].il[ip].Un_1;
@@ -841,7 +841,7 @@ int stiffmatel_st (long ii,
         }
 
         /* get pointer to damage object */
-        const damage *ptrDam = &eps[ii].st[ip].dam;
+        const Damage *ptrDam = &eps[ii].st[ip].dam;
         const double Un_1 = eps[ii].st[ip].Un_1;
         const double Jn_1 = eps[ii].st[ip].Jn_1;
 
@@ -1005,14 +1005,14 @@ int st_increment (long ne,
                   long nce,
                   COEL *coel,
                   double *pores,
-		  const CommunicationStructure *com,
+          const CommunicationStructure *com,
                   const int coh,
                   const int mp_id)
 {
   static const int ndn = 3;
   int err = 0;
   long ii,nne,*nod,i,j,k,II,M,P,R,ndofe,U,*cn;
-  double *x,*y,*z,*r_e,*r_u,*p,AA[3][3],PL,EL_e,
+  double *x,*y,*z,*r_e,*r_u,*p,AA[3][3],PL,EL_e = 0.0,
   FoN[3][3],pom,BB[3][3],*a,*r_a,*a_a;
   double GEL_e,GPL,Gpores,*LPf,*GPf;
 
@@ -1528,13 +1528,13 @@ static int get_material_tangent(double *L,
                                 const double Pn,
                                 const double pressure,
                                 const double *devS,
-                                const damage *dam,
+                                const Damage *dam,
                                 const HOMMAT *mat)
 {
   /*** NOTE: stabilized formulation needs dSdF ****/
   int err = 0;
 
-  /* compute damage */
+  /* compute Damage */
   double H = 0.0;
   *Ybar = 0.0;
   if(dam->damaged){
@@ -1621,7 +1621,7 @@ static int get_material_pres(double *Up,
                              const double Jn,
                              const double Jr,
                              const HOMMAT *mat,
-                             const damage *dam)
+                             const Damage *dam)
 {
   int err = 0;
   /* stabilized formulation uses the change in pressure, not total
@@ -1661,7 +1661,7 @@ static int get_Ru_at_ip(double *Ru,
                         const double Jn,
                         const double *devSbar,
                         const double pres,
-                        const damage *dam,
+                        const Damage *dam,
                         const double jj,
                         const double wt)
 {
@@ -1689,7 +1689,7 @@ static int get_Rp_at_ip(double *Rp,
                         const double deltaUp,
                         const double deltaPres,
                         const double P,
-                        const damage *dam,
+                        const Damage *dam,
                         const double jj,
                         const double wt)
 {
@@ -1715,7 +1715,7 @@ static int get_Rp_stab_at_ip(double *Rp,
                              const double Jr,
                              const double *Fr_I,
                              const double stab,
-                             const damage *dam,
+                             const Damage *dam,
                              const double jj,
                              const double wt)
 {
@@ -1766,7 +1766,7 @@ static int get_Kuu_at_ip(double *Kuu,
                          const double *Fr_I,
                          const double Jn,
                          const double Jr,
-                         const damage *dam,
+                         const Damage *dam,
                          const double totalP,
                          const double *devSbar,
                          const double *L,
@@ -1799,7 +1799,7 @@ static int get_Kup_at_ip(double *Kup,
                          const double Jn_1,
                          const double Jn,
                          const double Jr,
-                         const damage *dam,
+                         const Damage *dam,
                          const double jj,
                          const double wt)
 {
@@ -1830,7 +1830,7 @@ static int get_Kpu_at_ip(double *Kpu,
                          const double UP, /* n+1 only */
                          const double P, /* total pressure */
                          const double *SS,
-                         const damage *dam,
+                         const Damage *dam,
                          const double jj,
                          const double wt)
 {
@@ -1856,7 +1856,7 @@ static int get_Kpp_at_ip(double *Kpp,
                          const double Jn,
                          const double Jr,
                          const double H,
-                         const damage *dam,
+                         const Damage *dam,
                          const double jj,
                          const double wt)
 {
@@ -1883,7 +1883,7 @@ static int get_Kpu_stab_at_ip(double *Kpu,
                               const double *grad_delP,
                               const double *grad_P,
                               const double stab,
-                              const damage *dam,
+                              const Damage *dam,
                               const double *SS,
                               const double jj,
                               const double wt)
@@ -1995,7 +1995,7 @@ static int get_Kpp_stab_at_ip(double *Kpp,
                               const double stab,
                               const double *grad_P,
                               const double Ybar,
-                              const damage *dam,
+                              const Damage *dam,
                               const double jj,
                               const double wt)
 {
@@ -2129,7 +2129,7 @@ static double st_incr_elem (const long ii,
         }
 
         /* get pointer to damage object */
-        const damage *ptrDam = &eps[ii].dam[ip];
+        const Damage *ptrDam = &eps[ii].dam[ip];
 
         /* compute various objects needed for integration */
         err += integration_help(ip,ii,nne,i,j,k,x,y,z,

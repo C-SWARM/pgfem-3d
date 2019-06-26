@@ -14,7 +14,7 @@ void initialize_damage(const int ne,
                        EPS *eps,
                        const int analysis)
 {
-  int n_params = sizeof(damage_params)/sizeof(double);
+  int n_params = sizeof(DamageParams)/sizeof(double);
   double *dam_params = PGFEM_calloc (double, std::max(n_params, 4));
 
   for(int i=0; i<ne; i++){/* for each element */

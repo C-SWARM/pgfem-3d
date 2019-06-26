@@ -31,12 +31,10 @@ namespace {
   static constexpr ttl::Index<'j'> j;
   static constexpr ttl::Index<'k'> k;
 }
-    
+
 #ifndef UTILS_DEBUG
 #define UTILS_DEBUG 0
 #endif
-
-static const constexpr int periodic = 0;
 
 
 /// compute Eulerian Almansi strain from a given F
@@ -48,11 +46,11 @@ void compute_Eulerian_Almansi_strain(double *e_out,
                                      double *F_in){
 
   ttl::Tensor<2, 3, double *> e(e_out), F(F_in);
-        
+
   ttl::Tensor<2, 3, double> I = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};
-  ttl::Tensor<2, 3, double> b = F(i,k)*F(j,k);                                          
+  ttl::Tensor<2, 3, double> b = F(i,k)*F(j,k);
   ttl::Tensor<2, 3, double> bI = ttl::inverse(b);
-        
+
   e = 0.5*(I(i,j) - bI(i,j));
 }
 
@@ -69,12 +67,12 @@ double compute_Equivalent_strain(double *F_in){
   const ttl::Tensor<2, 3, double> I = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};
 
   double e_out[9] = {};
-  
+
   compute_Eulerian_Almansi_strain(e_out, F_in);
-   
+
   ttl::Tensor<2, 3, double *> e(e_out);
   ttl::Tensor<2, 3, double  > e_d = {};
-       
+
   double tr_e = e(i,i);
   e_d = e(i,j) - one_third*tr_e*I(i,j);
   double eq = sqrt(2.0*one_third*e_d(i,j)*e_d(i,j));
@@ -2928,25 +2926,25 @@ void Logarithmic_strain (double **F,
 
 void LToG (const double *f,
            double *Gf,
-	   const long ndofd,
-	   const CommunicationStructure *com)
+       const long ndofd,
+       const CommunicationStructure *com)
 {
   com->spc->LToG(f, Gf, ndofd, com->DomDof, com->GDof);
 }
 
 void GToL (const double *Gr,
-	   double *r,
-	   const long ndofd,
-	   const CommunicationStructure *com)
+       double *r,
+       const long ndofd,
+       const CommunicationStructure *com)
 {
   com->spc->GToL(Gr, r, ndofd, com->GDof);
 }
 
 PGFem3D_Comm* CreateGraph(int nproc,
-			  int myrank,
-			  long nn,
-			  Node *node,
-			  CommunicationStructure *com)
+              int myrank,
+              long nn,
+              Node *node,
+              CommunicationStructure *com)
 {
   int *BN,*displ;
   long i,j,k,NBn=0,*hu1,TBn=0,*GNn,pom,Dom{},II,*CDom;
@@ -2979,7 +2977,7 @@ PGFem3D_Comm* CreateGraph(int nproc,
   /* Gather nodes on boundaries between domains */
   GNn = aloc1l (TBn);
   com->net->allgatherv(hu1,NBn,NET_DT_LONG,GNn,BN,displ,NET_DT_LONG,
-		       com->comm);
+               com->comm);
 
   for (i=0;i<nproc;i++){
     II = 0;
@@ -3338,7 +3336,7 @@ double compute_volumes_from_coordinates(double *x,
   return V;
 }
 
-/// find roots of cubic equations(a*x^3+ b*x^2 + c*x + d = 0) numerically. 
+/// find roots of cubic equations(a*x^3+ b*x^2 + c*x + d = 0) numerically.
 /// The 1st root is found iteratively using Newton Raphson method, and 2nd and 3rd roots are
 /// computed analytically by solving quadratic equation.
 ///
@@ -3358,31 +3356,31 @@ void compute_root_of_cubic_euqation(double *x,
                                     bool print_cnvg)
 {
   double tol = 1.0e-15;
-  
+
   double x1 = x0;
   double f0 = tol;
-  
+
   for(int ia=0; ia<10; ia++){
     double f = a*x1*x1*x1 + b*x1*x1 + c*x1 + d;
     double df = 3.0*a*x1*x1 + 2.0*b*x1 + c;
     if(ia==0)
       f0 = f;
-      
+
     double dx = -f/df;
     x1 = x1 + dx;
-    
+
     if(f0<tol*tol)
       f0 = tol*tol;
-      
+
     double error = abs(f/f0);
-    
+
     if(print_cnvg)
       PGFEM_printf("%d: x1 = %e, |%e|%e|\n", ia, x1, f, error);
 
     if(error<tol)
       break;
   }
-  
+
   double x2 = (-b - x1*a + sqrt(b*b - 4.0*a*c - 2.0*a*b*x1 - 3.0*a*a*x1*x1))/2.0/a;
   double x3 = (-b - x1*a - sqrt(b*b - 4.0*a*c - 2.0*a*b*x1 - 3.0*a*a*x1*x1))/2.0/a;
 
@@ -3397,13 +3395,13 @@ void compute_root_of_cubic_euqation(double *x,
     x1 = x3;
     x3 = temp;
   }
-  
+
   if(x2 < x3){
     double temp = x2;
     x2 = x3;
     x3 = temp;
   }
-  
+
   if(print_cnvg){
     PGFEM_printf("---------------------------------------------\n");
     PGFEM_printf("soution of (%e)x^3+(%e)x^2+(%e)x+(%e): %e %e %e\n", a, b, c, d, x1, x2, x3);

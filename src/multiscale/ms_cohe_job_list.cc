@@ -240,7 +240,7 @@ int update_group_ms_cohe_job_list(const long nce,
                                            start_id,buff_size,
                                            n_job_dom,net,ms_comm);
   /* check error status */
-  if(check_warning(err,myrank));
+  if (check_warning(err,myrank)) {};
 
  exit_function:
   free(n_job_dom);

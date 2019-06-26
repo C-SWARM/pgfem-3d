@@ -25,7 +25,7 @@ int main(int argc, char **argv)
   mat.nu = 0.3;
   mat.E = 1.0;
   mat.devPotFlag = 1;
-  mat.volPotFlag = 2; 
+  mat.volPotFlag = 2;
 
   if (test_all) {
     for (int i = 0; i < NUM_MODELS; i++) {
@@ -35,10 +35,10 @@ int main(int argc, char **argv)
       assert(err == 0);
 
       /* Create and print the model info */
-      Model_var_info info; 
+      Model_var_info info;
       err += p->get_var_info(info);
       err += info.print_variable_info(stdout);
-      delete p;
+      delete [] p;
       printf("\n");
     }
   } else {
@@ -48,10 +48,10 @@ int main(int argc, char **argv)
       assert(err == 0);
 
       /* Create and print the model info */
-      Model_var_info info; 
+      Model_var_info info;
       err += p->get_var_info(info);
       err += info.print_variable_info(stdout);
-      delete p;
+      delete [] p;
       printf("\n");
   }
 

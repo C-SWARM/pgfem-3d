@@ -1130,7 +1130,7 @@ const
 int BPA_PARAM::compute_dudj(const Constitutive_model *m,
                             CM_Ctx &cm_ctx,
                             double *dudj)
-const 
+const
 {
   int err = 0;
   const double Je = det3x3(m->vars_list[0][m->model_id].Fs[_Fe].m_pdata);
@@ -1222,7 +1222,7 @@ const
 int BPA_PARAM::get_pF(const Constitutive_model *m,
                       double *F,
                       const int stepno)
-const 
+const
 {
   int err = 0;
   Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
@@ -1233,10 +1233,10 @@ const
       break;
     case 1: // n
       memcpy(F,Fs[_Fp_n].m_pdata, tensor*sizeof(double));
-      break;      
+      break;
     case 2: // n+1
       memcpy(F,Fs[_Fp].m_pdata, tensor*sizeof(double));
-      break;      
+      break;
     default:
       PGFEM_printerr("ERROR: Unrecognized step number (%zd)\n",stepno);
       err++;
@@ -1270,7 +1270,7 @@ const
       err++;
   }
   assert(err == 0);
-  return err;  
+  return err;
 }
 
 int BPA_PARAM::get_eF(const Constitutive_model *m,
@@ -1328,7 +1328,7 @@ const
 
 int BPA_PARAM::compute_dMdu(const Constitutive_model *m,
                             CM_Ctx &cm_ctx,
-                            const double *Grad_op,
+                            double *Grad_op,
                             const int nne,
                             const int ndofn,
                             double *dM_du)

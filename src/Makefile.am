@@ -12,7 +12,7 @@ PGFem3D_LDADD   = libpgfem3d.la
 PGFem3D_SOURCES = super_main.cc
 
 # Universal flags for all targets
-AM_CPPFLAGS = -Wall -Werror -Wno-misleading-indentation \
+AM_CPPFLAGS = -Wall \
               -I$(top_srcdir)/FEMLIB/include \
               -I$(top_srcdir)/include \
               -I$(top_srcdir)/lib/VTK_IO/include \

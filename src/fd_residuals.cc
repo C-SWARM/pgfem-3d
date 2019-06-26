@@ -39,7 +39,6 @@ using pgfem3d::Solver;
 using pgfem3d::CommunicationStructure;
 using pgfem3d::MultiscaleCommon;
 using pgfem3d::MULTISCALE_SOLUTION;
-const constexpr int ndn = 3;
 }
 
 /* assemble the element residual to the local portion of the global
@@ -247,7 +246,7 @@ static int fd_res_elem_MP(double *be,
        {
          double *bf = aloc1(ndofe);
          memset(bf, 0, sizeof(double)*ndofe);
-         
+
          residuals_3f_el(&fe, be, r_e, grid, mat, fv);
 
          for(long a = 0; a<ndofe; a++)
@@ -302,7 +301,7 @@ long fd_residuals_MP(Grid *grid,
                      Solver *sol,
                      LoadingSteps *load,
                      CRPL *crpl,
-		     const CommunicationStructure *com,
+             const CommunicationStructure *com,
                      const PGFem3D_opt *opts,
                      const Multiphysics& mp,
                      int mp_id,
@@ -485,7 +484,7 @@ int fd_res_compute_reactions_MP(Grid *grid,
                                 Solver *sol,
                                 LoadingSteps *load,
                                 CRPL *crpl,
-				const CommunicationStructure *com,
+                const CommunicationStructure *com,
                                 const PGFem3D_opt *opts,
                                 const Multiphysics& mp,
                                 int mp_id,

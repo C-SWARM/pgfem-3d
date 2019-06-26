@@ -31,10 +31,6 @@ struct Node;
 
 /// Pre-declare HOMMAT structure
 struct HOMMAT;
-#ifndef TYPE_HOMMAT
-#define TYPE_HOMMAT
-typedef struct HOMMAT FEMLIB;
-#endif
 
 #ifndef PGFEM3D_DEV_TEST
 #define PGFEM3D_DEV_TEST 1
@@ -53,7 +49,7 @@ enum model_type {
   ISO_VISCOUS_SPLIT_DAMAGE,
   MANUFACTURED_SOLUTIONS,
   NUM_MODELS,
-  J2_PLASTICITY_SPLIT_DAMAGE = 98,   
+  J2_PLASTICITY_SPLIT_DAMAGE = 98,
   TESTING=99,
   CM_UQCM=100
 };
@@ -90,7 +86,7 @@ class CM_Ctx
       is_coulpled_with_thermal = false;
       npa = 1;
     };
-    
+
     /// set tensors
     void set_tensors(double *F_in,
                      double *eFnpa_in,
@@ -103,7 +99,7 @@ class CM_Ctx
       hFnp1 = hFnp1_in;
       is_coulpled_with_thermal = is_cpled_with_thermal;
     };
-    
+
     /// set tensors without thermal coupling
     void set_tensors(double *F_in,
                      double *eFnpa_in){
@@ -117,11 +113,11 @@ class CM_Ctx
                         const bool is_cpled_with_thermal){
       set_tensors(F_in, NULL, hFn_in, hFnp1_in, is_cpled_with_thermal);
     };
-    
+
     /// set tensors for steady state without thermal coupling
     void set_tensors_ss(double *F_in){
       set_tensors_ss(F_in, NULL, NULL, false);
-    };    
+    };
 
     /// set time steping values
     void set_time_steps(const double dt_in,
@@ -133,17 +129,17 @@ class CM_Ctx
       alpha = alpha_in;
       npa   = npa_in;
     };
-    
+
     /// set time steping values for steady state
     void set_time_steps_ss(const double dt_in,
                            const double dtn_in){
       set_time_steps(dt_in, dtn_in, 0.5, -1);
     };
-    
+
     void set_time_steps_ss(const double dt_in){
       set_time_steps(dt_in, dt_in, 0.5, -1);
     };
-    
+
     // print 3x3 matrix with name
     void print_3x3(const double *F, const char *name){
       if(F==NULL)
@@ -185,17 +181,17 @@ class Model_parameters
   MATERIAL_CONSTITUTIVE_MODEL *cm_mat;
   HyperElasticity *cm_elast;
   GcmSolverInfo *gcm_solver_info;
-  
-  // set members variables to initial values (zeros and NULLs)   
+
+  // set members variables to initial values (zeros and NULLs)
   void set_nulls(void)
   {
     p_hmat            = NULL;
     mat_id            = -1;
-    uqcm              = 0; 
+    uqcm              = 0;
     cm3f              = false;
     cm_mat            = NULL;
     cm_elast          = NULL;
-    gcm_solver_info   = NULL;   
+    gcm_solver_info   = NULL;
     type              = -1;
     n_param           = 0;
     model_param       = NULL;
@@ -230,7 +226,7 @@ class Model_parameters
       default:
         PGFEM_printerr("ERROR: Unrecognized model type! (%zd)\n",type);
         return;
-    }    
+    }
     model_dependent_finalization();
     finalization();
   };
@@ -271,7 +267,7 @@ class Model_parameters
                                     CM_Ctx &cm_ctx,
                                     const double *x,
                                     const double t) const { return 0; };
-                                    
+
   virtual int integration_algorithm(Constitutive_model *m,
                                     CM_Ctx &cm_ctx) const { return 0; };
 
@@ -295,13 +291,13 @@ class Model_parameters
   /// \return non-zero value on internal error that should be handled by the calling function.
   virtual int compute_dev_stress(const Constitutive_model *m,
                                  double *eC,
-                                 double *S) 
-  const 
-  {    
-    cm_elast->compute_PK2_dev(eC, S); 
-    return 0; 
+                                 double *S)
+  const
+  {
+    cm_elast->compute_PK2_dev(eC, S);
+    return 0;
   };
-                                 
+
   /// User defined function to compute volumetric stress contributions
   ///
   /// \param[in]     m,     pointer to Constitutive_model object.
@@ -323,11 +319,11 @@ class Model_parameters
   virtual double compute_dudj(const Constitutive_model *m,
                               const double theta_e,
                               const int npa,
-                              const double alpha) 
-  const 
+                              const double alpha)
+  const
   {
     double dudj = 0.0;
-    cm_elast->compute_dudj(&dudj, theta_e);  
+    cm_elast->compute_dudj(&dudj, theta_e);
     return dudj*(cm_elast->mat->kappa);
   };
 
@@ -353,11 +349,11 @@ class Model_parameters
                                   double *eC,
                                   double *L)
   const
-  { 
+  {
     cm_elast->compute_tangent_dev(eC, L);
-    return 0; 
+    return 0;
   };
-                                  
+
   /// User defined function to compute volumetric elasticity contributions
   ///
   /// \param[in]     m,     pointer to Constitutive_model object.
@@ -380,13 +376,13 @@ class Model_parameters
                                 double theta_e,
                                 const int npa,
                                 const double alpha)
-  const 
+  const
   {
     double ddudj = 0.0;
-    this->cm_elast->compute_d2udj2(&ddudj, theta_e);  
-    return ddudj*(cm_elast->mat->kappa);    
+    this->cm_elast->compute_d2udj2(&ddudj, theta_e);
+    return ddudj*(cm_elast->mat->kappa);
   };
-                             
+
   /// User defined function to compute the elastic algorithmic stiffness tangent
   ///
   /// \param[in]  m,                 pointer to Constitutive_model object.
@@ -401,7 +397,7 @@ class Model_parameters
                                 double *L,
                                 double *S,
                                 const bool compute_stiffness) const { return 0; };
-                                
+
   /// User defined function to compute the deviatroic part of elastic stiffness tangent
   ///
   /// \param[in]  m,                 pointer to Constitutive_model object.
@@ -421,7 +417,7 @@ class Model_parameters
                                     const int npa,
                                     const double alpha,
                                     const double dt,
-                                    const bool compute_stiffness = false) 
+                                    const bool compute_stiffness = false)
   const
   {
     int err = 0;
@@ -436,8 +432,8 @@ class Model_parameters
      err += compute_dev_stress(m,eC,S);
      if(compute_stiffness)
        err += compute_dev_tangent(m,eC,L);
-             
-     return err; 
+
+     return err;
   };
 
   /// User defined function that to update the internally
@@ -499,7 +495,7 @@ class Model_parameters
   virtual int get_F(const Constitutive_model *m,
                     double *F,
                     const int stepno) const { return 0; };
-                    
+
   /// User defined function to set the total deformation.
   ///
   /// \param[in]  m,      constant reference to a Constitiutive_model object.
@@ -510,7 +506,7 @@ class Model_parameters
   /// \return non-zero on internal error
   virtual int set_F(const Constitutive_model *m,
                     double *F,
-                    const int stepno) const { return 0; };                    
+                    const int stepno) const { return 0; };
 
   /// User defined function to return the plastic part deformation.
   ///
@@ -572,7 +568,7 @@ class Model_parameters
     *var = 0.0;
     return 0;
   };
-  
+
   /// User defined function to return deviatroic and volumetric damages.
   ///
   /// \param[in]  m,      constant reference to a Constitiutive_model object.
@@ -602,14 +598,14 @@ class Model_parameters
     X[0] = X[1] = 0.0;
     return 0;
   };
-  
+
   virtual int get_plast_strain_var(const Constitutive_model *m,
                                    double *lam_p)
   const
   {
     *lam_p = 0.0;
     return 0;
-  }  
+  }
 
   /// objtaion subdivision parameters
   /// It doese not modify the internal state variables.
@@ -835,13 +831,13 @@ class Constitutive_model
   /// the internal state to contain the updated values upon exit, i.e.,
   /// subsequent calls to get_F functions will return the correct
   /// values without re-integrating the constitutive model.
-  int run_integration_algorithm(double *Fnp1, 
+  int run_integration_algorithm(double *Fnp1,
                                 double *hFn,
                                 double *hFnp1,
                                 const double *dts,
                                 double alpha,
                                 const double *x,
-                                const double t,                              
+                                const double t,
                                 int is_it_couple_w_thermal = 0,
                                 double tf_factor = 1.0);
 };
@@ -856,7 +852,7 @@ int init_all_constitutive_model(EPS *eps,
                                 const Element *elem,
                                 const int n_mat,
                                 const HOMMAT *hmat_list,
-				int myrank);
+                int myrank);
 /// save state variables
 ///
 /// \param[in, out] fv an object containing all field variables
@@ -953,7 +949,7 @@ int cm_get_subdivision_parameter(double *subdiv_param,
                                  const EPS *eps,
                                  const double dt);
 
-struct FEMLIB;
+class FEMLIB;
 
 /// compute element stiffness matrix in transient
 ///
@@ -1049,8 +1045,8 @@ int residuals_el_constitutive_model(FEMLIB *fe,
                                     const Multiphysics& mp,
                                     int mp_id,
                                     const double *dts,
-                                    const double t); 
-                                    
+                                    const double t);
+
 int cm_write_tensor_restart(FILE *fp, const double *tensor);
 
 int cm_read_tensor_restart(FILE *fp, double *tensor);

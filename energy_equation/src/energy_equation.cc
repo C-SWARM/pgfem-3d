@@ -31,30 +31,30 @@ using namespace pgfem3d;
 
 using pgfem3d::Solver;
 using pgfem3d::CommunicationStructure;
-  
+
 const constexpr int DIM_3 = 3;
-const constexpr int DIM_3x3 = 9;
-const constexpr int DIM_3x3x3 = 27;
-const constexpr int DIM_3x3x3x3 = 81;
+// const constexpr int DIM_3x3 = 9;
+// const constexpr int DIM_3x3x3 = 27;
+// const constexpr int DIM_3x3x3x3 = 81;
 
 const constexpr double TOL_FHS = 1.0e-6;
 const constexpr double PLASTIC_HEAT_FACTOR = 0.8;
 
 const constexpr Index<'A'> A;
 const constexpr Index<'B'> B;
-const constexpr Index<'C'> C;
-const constexpr Index<'D'> D;
+// const constexpr Index<'C'> C;
+// const constexpr Index<'D'> D;
 const constexpr Index<'I'> I;
 const constexpr Index<'J'> J;
 const constexpr Index<'K'> K;
 const constexpr Index<'L'> L;
 const constexpr Index<'M'> M;
 const constexpr Index<'N'> N;
-const constexpr Index<'O'> O;
+// const constexpr Index<'O'> O;
 const constexpr Index<'P'> P;
 const constexpr Index<'Q'> Q;
-const constexpr Index<'X'> X;
-const constexpr Index<'Y'> Y;
+// const constexpr Index<'X'> X;
+// const constexpr Index<'Y'> Y;
 
 template <class T1, class T2>
 inline int inv(T1 &A, T2 &AI)
@@ -563,9 +563,9 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
 
   for(int ip = 0; ip<fe->nint; ip++)
   {
-  
+
     ++perIter_ODE_EXA_metric;      //count the total number of integration points for the EXA metric (No ODEs, so 1 is used for each operation)
-  
+
     double Q = 0.0;
     // Udate basis functions at the integration points.
     fe->elem_basis_V(ip);
@@ -1129,7 +1129,7 @@ int energy_equation_compute_load4pBCs(Grid *grid,
                                       FieldVariables *fv,
                                       Solver *sol,
                                       LoadingSteps *load,
-				      const CommunicationStructure *com,
+                      const CommunicationStructure *com,
                                       const PGFem3D_opt *opts,
                                       const int mp_id,
                                       double dt)
@@ -1181,7 +1181,7 @@ int energy_equation_compute_load4pBCs(Grid *grid,
 
     // do volume integration at an element
     err += energy_equation_compute_stiffness_elem(&fe,NULL,grid,mat,fv,sol,load,com,NULL,
-						  interior,opts,mp_id,
+                          interior,opts,mp_id,
                                                   do_assemble,compute_load4pBCs,dt,total_Lagrangian);
     if(err != 0)
       break;

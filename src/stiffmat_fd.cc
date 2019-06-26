@@ -51,9 +51,8 @@ using pgfem3d::solvers::SparseSystem;
 using pgfem3d::CommunicationStructure;
 using pgfem3d::MultiscaleCommon;
 using pgfem3d::MULTISCALE_SOLUTION;
-  
+
 const constexpr int periodic = 0;
-const constexpr int ndn = 3;
 }
 
 /* This function may not be used outside of this file */
@@ -497,7 +496,7 @@ static int el_stiffmat_MP(int eid,
   double lm = 0.0;
   int intg_order = 0;
   int myrank = com->rank;
-  
+
   SUPP sup = load->sups[mp_id];
 
   // multi-scale simulation, displacement base and three-fied-mixed (elastic only)
@@ -688,7 +687,7 @@ int stiffmat_fd_MP(Grid *grid,
   int err = 0;
   // if 0, update only stiffness
   double lm = 0.0;
-  
+
   double **Lk,**receive;
 
   try {
@@ -706,7 +705,7 @@ int stiffmat_fd_MP(Grid *grid,
   for(int eid=0; eid<com->nbndel; eid++)
   {
     err += el_stiffmat_MP(com->bndel[eid],Lk,Ddof.m_pdata,0,grid,mat,fv,sol,load,com,crpl,
-			  opts,mp,mp_id,dt,iter);
+              opts,mp,mp_id,dt,iter);
 
     if(err != 0)
       break;

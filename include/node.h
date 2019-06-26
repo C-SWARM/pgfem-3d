@@ -12,22 +12,26 @@ struct NodeIDMap {
 /** Structure of node properties */
 struct Node {
   /** Coordinates of node */
-  double x1,x2,x3,x1_fd,x2_fd,x3_fd;
+  double    x1 = 0.0;
+  double    x2 = 0.0;
+  double    x3 = 0.0;
+  double x1_fd = 0.0;
+  double x2_fd = 0.0;
+  double x3_fd = 0.0;
 
-  long loc_id; //Local node number, required for sorting
-  NodeIDMap *id_map; // id maps for physics
+  long loc_id = 0;                     //Local node number, required for sorting
+  NodeIDMap *id_map = nullptr;         // id maps for physics
 
-  long Gnn; /**< Global node number. */
-  long Dom; /**< Which processor the node lives on. This is how
-               interfacial nodes are identified. */
-  long Pr;  /**< Identifies the node as a periodic node. If the node is
-               periodic, this variable contains the node number it is periodic
-               with/to. */
-  //    long ndofn;/**< Number of DOFs on the node */
-  long pr;   /**< Property of node. */
+  long Gnn = 0;  //!< Global node number.
+  long Dom = 0;  //!< Which processor the node lives on. This is how interfacial
+                 //   nodes are identified.
+  long  Pr = 0;  //!< Identifies the node as a periodic node. If the node is
+                 //   periodic, this variable contains the node number it is
+                 //   periodic with/to.
+  long  pr = 0;  //!< Property of node.
 
-  int model_type;
-  int model_id;
+  int model_type = 0;
+  int   model_id = 0;
 };
 
 Node* build_node(const long nn,
