@@ -146,7 +146,7 @@ static int quad_1(int *n_ip,
   double one_over_sqrt_3 = 0.57735026918962584; // 1.0/sqrt(3.0);
   
   (*wt)[0] = (*wt)[1] = (*wt)[2] = (*wt)[3] = 1.0;
-  (*ksi)[1] = -one_over_sqrt_3; (*eta)[1] = -one_over_sqrt_3;
+  (*ksi)[0] = -one_over_sqrt_3; (*eta)[0] = -one_over_sqrt_3;
   (*ksi)[1] =  one_over_sqrt_3; (*eta)[1] = -one_over_sqrt_3;
   (*ksi)[2] =  one_over_sqrt_3; (*eta)[2] = one_over_sqrt_3;
   (*ksi)[3] = -one_over_sqrt_3; (*eta)[3] = one_over_sqrt_3;
