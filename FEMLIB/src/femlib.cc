@@ -1,3 +1,13 @@
+/// Define finite element integration rules
+///
+/// Authors:
+/// Sangmin Lee, [1], <slee43@nd.edu>
+///
+/// [1] University of Notre Dame, Notre Dame, IN
+
+// In this file, Vol and BND stands for Volume and boundary element, respectively.
+//               nsd is number of spatial dimesions.
+
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -10,16 +20,136 @@
 #include "elem3d.h"
 #include "tensors.h"
 #include "utils.h"
-#include "integrate_surface.h"
-#include "quadrature_rules.h"
 
-static const constexpr int          LINE    = element_type( 2, FemDim1D);
-static const constexpr int      TRIANGLE    = element_type( 3, FemDim2D);
-static const constexpr int     QTRIANGLE    = element_type( 6, FemDim2D);
-static const constexpr int QUADRILATERAL    = element_type( 4, FemDim2D);
-static const constexpr int   TETRAHEDRON    = element_type( 4, FemDim3D);
-static const constexpr int  QTETRAHEDRON    = element_type(10, FemDim3D);
-static const constexpr int    HEXAHEDRAL    = element_type( 8, FemDim3D);
+// element order
+static const constexpr int LinearElement    = 0;
+static const constexpr int QuadraticElement = 1;
+
+// finite element demesion
+static const constexpr int FemDim0D = 0;
+static const constexpr int FemDim1D = 1;
+static const constexpr int FemDim2D = 2;
+static const constexpr int FemDim3D = 3;
+
+/// compute element type by number of nodes per element and spatial dimension
+/// spatial dimension increase by 10 in setting element type 
+///
+/// \param[in] 
+static const constexpr int element_type(const int nne,
+                                        const int dim){
+  return dim*10 + nne;
+}
+
+
+// define element types
+static const constexpr int          LINE = element_type( 2, FemDim1D);
+static const constexpr int         QLINE = element_type( 3, FemDim1D);
+static const constexpr int      TRIANGLE = element_type( 3, FemDim2D);
+static const constexpr int     QTRIANGLE = element_type( 6, FemDim2D);
+static const constexpr int QUADRILATERAL = element_type( 4, FemDim2D);
+static const constexpr int   TETRAHEDRON = element_type( 4, FemDim3D);
+static const constexpr int  QTETRAHEDRON = element_type(10, FemDim3D);
+static const constexpr int    HEXAHEDRAL = element_type( 8, FemDim3D);
+static const constexpr int        WEDGE  = element_type( 6, FemDim3D);
+
+// define mapping from volume to boundary elements by face id
+// Volume2Boundary[face_id][nne_BND]
+static const constexpr int Tet2Tri[4][3] = {{0,2,1},{0,1,3},{1,2,3},{0,3,2}};
+static const constexpr int QTet2QTri[4][6] = {{0,2,1,6,5,4},{0,1,3,4,8,7},{1,2,3,5,9,8},{0,3,2,7,9,6}};
+static const constexpr int Hex2Quad[6][4] = {{3,2,1,0},{7,4,5,6},{0,1,5,4},{2,6,5,1},{3,7,6,2},{3,0,4,7}};
+
+// define mapping from nsd_Vol-1 integration rules to nsd_Vol for boundary integration in Volume element
+static const constexpr int kez_map_Hex[6][4] = {{1, 0, 2, -1},  // ksi2D(0) -> eta3D(1), eta2D(1) -> ksi3D(0), zet3D(2) = -1
+                                                {0, 1, 2,  1},  // ksi2D(0) -> ksi3D(0), eta2D(1) -> eta3D(1), zet3D(2) =  1
+                                                {1, 2, 0,  1},  // ksi2D(0) -> eta3D(1), eta2D(1) -> zet3D(2), ksi3D(0) =  1
+                                                {2, 0, 1,  1},  // ksi2D(0) -> zet3D(2), eta2D(1) -> ksi3D(0), eta2D(1) =  1
+                                                {2, 1, 0, -1},  // ksi2D(0) -> zet3D(2), eta2D(1) -> eta3D(1), ksi3D(0) = -1
+                                                {0, 2, 1, -1}}; // ksi2D(0) -> ksi3D(0), eta2D(1) -> zet3D(2), eta2D(1) = -1
+
+static const constexpr int kez_map_Tet[4][4] = {{0,1, 2, 0},  // ksi2D(0) -> ksi3D(0), eta2D(1) -> eta3D(1), zet3D(2) = 0
+                                                {0,2, 1, 0},  // ksi2D(0) -> ksi3D(0), eta2D(1) -> zet3D(2), eta2D(1) = 0
+                                                {0,1, 2, 0},  // ksi2D(0) -> ksi3D(0), eta2D(1) -> eta3D(1), zet3D(2) = 1 - ksi_3D - eta_3D;
+                                                {1,2, 0, 0}}; // ksi2D(0) -> eta3D(1), eta2D(1) -> zet3D(2), ksi3D(0) = 0
+                                                  
+/// 
+void print_func_file_line_and_abort(const char *fname,
+                                    const char *filename,
+                                    const int line){
+ PGFEM_printerr("(%s:%s:%d)\n", fname, filename, line);
+ pgfem3d::PGFEM_Abort();
+}
+
+void FEM_shape_functions(const int element_type, 
+                         const double ksi,
+                         const double eta,
+                         const double zet,
+                         double *N){
+  switch(element_type){
+    case LINE:
+      N[0] = 0.5*(1.0 - ksi);
+      N[1] = 0.5*(1.0 + ksi);
+      break;
+    case QLINE:
+      N[0] = -0.5*(1.0 - ksi)*ksi;
+      N[1] = (1.0 - ksi)*(1.0 + ksi);
+      N[2] = 0.5*(1.0 + ksi)*ksi;
+      break;
+    case TRIANGLE:
+      N[0]= 0.25*(1.0 - ksi)*(1.0 - eta);
+      N[1]= 0.25*(1.0 + ksi)*(1.0 - eta);
+      N[2]= 0.50*(1.0 + eta);
+      break;
+    case QUADRILATERAL:
+      N[0] = 0.25*(1.0 - ksi)*(1.0 - eta);
+      N[1] = 0.25*(1.0 + ksi)*(1.0 - eta);
+      N[2] = 0.25*(1.0 + ksi)*(1.0 + eta);
+      N[3] = 0.25*(1.0 - ksi)*(1.0 + eta);
+      break;
+    case QTRIANGLE:
+      break;
+    case TETRAHEDRON:
+      N[0] = (1.0 - ksi - eta - zet);
+      N[1] = ksi;
+      N[2] = eta;
+      N[3] = zet;
+      break;
+    case QTETRAHEDRON:
+    {
+      double ksi_eta_zet = 1.0 - ksi - eta - zet;
+      N[0] = (2.0*ksi_eta_zet - 1.0)*ksi_eta_zet;
+      N[1] = (2.0*ksi-1.0)*ksi;
+      N[2] = (2.0*eta-1.0)*eta;
+      N[3] = (2.0*zet-1.0)*zet;
+      N[4] = 4.0*ksi_eta_zet*ksi;
+      N[5] = 4.0*ksi*eta;
+      N[6] = 4.0*ksi_eta_zet*eta;
+      N[7] = 4.0*ksi_eta_zet*zet;
+      N[8] = 4.0*ksi*zet;
+      N[9] = 4.0*eta*zet;
+      break;
+    }
+    case HEXAHEDRAL:
+      N[0] = 1.0/8.0*(1.0 - ksi)*(1.0 - eta)*(1.0 - zet);
+      N[1] = 1.0/8.0*(1.0 + ksi)*(1.0 - eta)*(1.0 - zet);
+      N[2] = 1.0/8.0*(1.0 + ksi)*(1.0 + eta)*(1.0 - zet);
+      N[3] = 1.0/8.0*(1.0 - ksi)*(1.0 + eta)*(1.0 - zet);  
+      N[4] = 1.0/8.0*(1.0 - ksi)*(1.0 - eta)*(1.0 + zet);
+      N[5] = 1.0/8.0*(1.0 + ksi)*(1.0 - eta)*(1.0 + zet);
+      N[6] = 1.0/8.0*(1.0 + ksi)*(1.0 + eta)*(1.0 + zet);
+      N[7] = 1.0/8.0*(1.0 - ksi)*(1.0 + eta)*(1.0 + zet);
+      break;
+    case WEDGE:
+      N[0] = 0.5*(1.0 - zet)*ksi;
+      N[1] = 0.5*(1.0 - zet)*eta;
+      N[2] = 0.5*(1.0 - zet)*(1.0-ksi-eta);
+      N[3] = 0.5*(1.0 + zet)*ksi;
+      N[4] = 0.5*(1.0 + zet)*eta;
+      N[5] = 0.5*(1.0 + zet)*(1.0-ksi-eta);
+    default:
+      PGFEM_printerr("ERROR: Sahpe function for element %d is not implemented.\n", element_type);
+      print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
+  }
+}
 
 static const constexpr double one_over_sqrt_3 = 0.57735026918962584; // 1.0/sqrt(3.0);
 
@@ -75,7 +205,6 @@ typedef struct {
     
 } TetIntegrationPoints5;
 
-
 typedef struct {
     const double weights[11]  = {-0.01315555556,  0.007622222222, 0.007622222222, 0.007622222222,
                                   0.007622222222, 0.02488888889,  0.02488888889,  0.02488888889,
@@ -94,32 +223,47 @@ typedef struct {
     
 } TetIntegrationPoints11;
 
+typedef struct {
+    const double weights[1]  = {0.5};
+    const double gk[1] = {1.0/3.0};
+    const double ge[1] = {1.0/3.0};
+    const double gz[1] = {};
+    
+    int gpno = 1;
+} TriIntegrationPoints1;
 
+typedef struct {
+    const double weights[3]  = {1.0/6.0, 1.0/6.0, 1.0/6.0};
+    const double gk[3] = {2.0/3.0, 1.0/6.0, 1.0/6.0};
+    const double ge[3] = {1.0/6.0, 1.0/6.0, 2.0/3.0};
+    const double gz[3] = {};
+        
+    int gpno = 3;
+} TriIntegrationPoints3;
 
-template <class GP> class QuadratureRule{
+typedef struct {
+    const double weights[4]  = {-9.0/32.0, 25.0/96.0, 25.0/96.0, 25.0/96.0};
+    const double gk[4] = {1.0/3.0, 0.6, 0.2, 0.2};
+    const double ge[4] = {1.0/3.0, 0.2, 0.2, 0.6};
+    const double gz[4] = {};
+    
+    int gpno = 4;
+} TriIntegrationPoints4;
+
+class QuadratureRule{
   public:
-    GP gp;
     QuadratureRule(){};
-    void get_integration_points(Matrix<double> &ksi, Matrix<double> &eta, Matrix<double> &zet, Matrix<double> &weights){
-      for(int ia=0; ia<gp.gpno; ++ia){
-        ksi(ia) = gp.gk[ia];
-        eta(ia) = gp.ge[ia];
-        zet(ia) = gp.gz[ia];
-        weights(ia) = gp.weights[ia];
-      }
-    }
 
-    void get_integration_point_ids_3D(Matrix<int> &itg_ids, 
-                                      const int npt_x,
-                                      const int npt_y,
-                                      const int npt_z){
+    template <class GP>
+    void get_gauss_integration_point_ids_3D(const GP &gp,
+                                            Matrix<int> &itg_ids){
       const int nsd = 3;
-      itg_ids.initialization(npt_x*npt_y*npt_z, nsd);
+      itg_ids.initialization(gp.gpno*gp.gpno*gp.gpno, nsd);
           
       long cnt = 0;
-      for(int ia=0; ia<npt_x; ia++){
-        for(int ib=0; ib<npt_y; ib++){
-          for(int ic=0; ic<npt_z; ic++){
+      for(int ia=0; ia<gp.gpno; ++ia){
+        for(int ib=0; ib<gp.gpno; ++ib){
+          for(int ic=0; ic<gp.gpno; ++ic){
             itg_ids(cnt, 0) = ia;
             itg_ids(cnt, 1) = ib;
             itg_ids(cnt, 2) = ic;
@@ -129,70 +273,182 @@ template <class GP> class QuadratureRule{
       }
     }
     
-    void get_integration_point_ids_2D(Matrix<int> &itg_ids, 
-                                      const int npt_x,
-                                      const int npt_y){
+    template <class GP>
+    void get_gauss_integration_point_ids_2D(const GP &gp,
+                                            Matrix<int> &itg_ids){
       const int nsd = 2;
-      itg_ids.initialization(npt_x*npt_y, nsd);
+      itg_ids.initialization(gp.gpno*gp.gpno, nsd);
+          
+      long cnt = 0;
+      for(int ia=0; ia<gp.gpno; ++ia){
+        for(int ib=0; ib<gp.gpno; ++ib){
+          itg_ids(cnt, 0) = ia;
+          itg_ids(cnt, 1) = ib;
+          ++cnt;
+        }
+      }
+    }
+    
+    template <class GP>
+    void get_integration_point_ids_listed(const GP &gp,
+                                          Matrix<int> &itg_ids,
+                                          const int nsd){
+      itg_ids.initialization(gp.gpno, nsd);
+          
+      for(int ia=0; ia<gp.gpno; ++ia)
+        for(int ib=0; ib<nsd; ++ib)
+          itg_ids(ia, ib) = ia;
+    }
+    
+    template <class GP>
+    void get_integration_point_ids_listed_Boundary(const GP &gp,
+                                                   Matrix<int> &itg_ids,
+                                                   const int volume_nsd,
+                                                   const int face_id){
+      itg_ids.initialization(gp.gpno, volume_nsd);
+          
+      for(int ia=0; ia<gp.gpno; ++ia)
+        for(int ib=0; ib<volume_nsd; ++ib)
+          itg_ids(ia, ib) = ia;
+    }
+
+    template <class GP, class T>
+    void get_gauss_integration_point_ids_3D_Boundary(const GP &gp,
+                                                     Matrix<int> &itg_ids, 
+                                                     const int face_id,
+                                                     const T kez_map){
+      const int nsd = 3;
+      itg_ids.initialization(gp.gpno*gp.gpno, nsd);
       
       long cnt = 0;
-      for(int ia=0; ia<npt_x; ia++){
-        for(int ib=0; ib<npt_y; ib++){
-            itg_ids(cnt, 0) = ia;
-            itg_ids(cnt, 1) = ib;
+      for(int ia=0; ia<gp.gpno; ++ia){
+        for(int ib=0; ib<gp.gpno; ++ib){
+            itg_ids(cnt, kez_map[face_id][0]) = ia;
+            itg_ids(cnt, kez_map[face_id][1]) = ib;
+            itg_ids(cnt, kez_map[face_id][2]) = 0;
             ++cnt;
         }
       }
     }
-    void get_integration_point_ids_1D(Matrix<int> &itg_ids, 
-                                      const int npt_x){
-
-      const int nsd = 1;
-      itg_ids.initialization(npt_x, nsd);
-      
-      for(int ia=0; ia<npt_x; ia++){
-        itg_ids(ia, 0) = ia;
-      }
-    }    
-
     
-    void get_integration_point_ids(Matrix<int> &itg_ids, const int nsd, bool is_Gaussian = true){
-      int npt[3] = {};
-      if(is_Gaussian){
-        for(int ia=0; ia<nsd; ++ia)
-          npt[ia] = this->gp.gpno;          
-      } else {
-        npt[0] = this->gp.gpno;
-        for(int ia=1; ia<nsd; ++ia)
-          npt[ia] = 1;
+    template <class GP, class T>
+    void get_gauss_integration_point_ids_2D_Boundary(const GP &gp,
+                                                     Matrix<int> &itg_ids, 
+                                                     const int face_id,
+                                                     const T kez_map){
+      const int nsd = 2;
+      itg_ids.initialization(gp.gpno, nsd);
+      
+      for(int ia=0; ia<gp.gpno; ++ia){
+        itg_ids(ia, kez_map[face_id][0]) = ia;
+        itg_ids(ia, kez_map[face_id][1]) = 0;
       }
-      switch(nsd){
-        case 1:
-          get_integration_point_ids_1D(itg_ids, npt[0]);
-          return;
-        case 2:
-          get_integration_point_ids_2D(itg_ids, npt[0], npt[1]);
-          return;
-        case 3:
-          get_integration_point_ids_3D(itg_ids, npt[0], npt[1], npt[2]);
-          return;
-        default:
-          PGFEM_printerr("ERROR: number of spatial dimension %d is not supported.\n", nsd);
-          pgfem3d::PGFEM_Abort();
-      }      
     }
 };
 
-template <class GP> class QuadratureRule3Dto2D{
+template <class GP> class QuadratureRuleVolume : public QuadratureRule{
   public:
     GP gp;
-    QuadratureRule3Dto2D(){};
+    QuadratureRuleVolume(){};
     void get_integration_points(Matrix<double> &ksi, Matrix<double> &eta, Matrix<double> &zet, Matrix<double> &weights){
       for(int ia=0; ia<gp.gpno; ++ia){
         ksi(ia) = gp.gk[ia];
         eta(ia) = gp.ge[ia];
         zet(ia) = gp.gz[ia];
         weights(ia) = gp.weights[ia];
+      }
+    }
+    void get_integration_point_ids(Matrix<int> &itg_ids, const int nsd, bool is_Gaussian = true){
+      if(is_Gaussian){
+        switch(nsd){
+          case 1:
+            get_integration_point_ids_listed(gp, itg_ids, nsd);
+            return;
+          case 2:
+            get_gauss_integration_point_ids_2D(gp, itg_ids);
+            return;
+          case 3:
+            get_gauss_integration_point_ids_3D(gp, itg_ids);
+            return;
+          default:
+            PGFEM_printerr("ERROR: number of spatial dimension %d is not supported.\n", nsd);
+            print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
+        }              
+      } 
+      else
+        get_integration_point_ids_listed(gp, itg_ids, nsd);
+    }    
+};
+
+template <class GP> class QuadratureRuleBoundary : public QuadratureRule{
+  public:
+    GP gp;
+    QuadratureRuleBoundary(){};
+    void set_hex2quad(Matrix<double> &ksi,
+                      Matrix<double> &eta,
+                      Matrix<double> &zet,
+                      Matrix<double> &weights,
+                      const int face_id){
+      double *kez3D[3] = {ksi.m_pdata, eta.m_pdata, zet.m_pdata};
+      
+      for(int ia=0; ia<gp.gpno; ++ia){
+        kez3D[kez_map_Hex[face_id][0]][ia] = gp.gk[ia];
+        kez3D[kez_map_Hex[face_id][1]][ia] = gp.ge[ia];
+        kez3D[kez_map_Hex[face_id][2]][ia] = 1.0*kez_map_Hex[face_id][3];
+      }
+    }
+    
+    void set_tet2tri(Matrix<double> &ksi,
+                     Matrix<double> &eta,
+                     Matrix<double> &zet,
+                     Matrix<double> &weights,
+                     const int face_id){
+      double *kez3D[3] = {ksi.m_pdata, eta.m_pdata, zet.m_pdata};
+      
+      for(int ia=0; ia<gp.gpno; ++ia){
+        kez3D[kez_map_Tet[face_id][0]][ia] = gp.gk[ia];
+        kez3D[kez_map_Tet[face_id][1]][ia] = gp.ge[ia];
+        if(face_id==2)
+          zet(ia) = 1.0 - gp.gk[ia] - gp.ge[ia];
+      }
+    }
+         
+    void get_integration_points(Matrix<double> &ksi,
+                                Matrix<double> &eta,
+                                Matrix<double> &zet,
+                                Matrix<double> &weights,
+                                const int face_id,
+                                const int e_type_volume){
+      if(e_type_volume == HEXAHEDRAL)
+        set_hex2quad(ksi, eta, zet, weights, face_id);
+        
+      if(e_type_volume == TETRAHEDRON || e_type_volume == QTETRAHEDRON)
+        set_tet2tri(ksi, eta, zet, weights, face_id);        
+
+    }
+    
+    void get_integration_point_ids(Matrix<int> &itg_ids, 
+                                   const int volume_nsd, 
+                                   const int face_id, 
+                                   bool is_Gaussian = true){     
+      if(is_Gaussian){
+        switch(volume_nsd){
+          case 3:
+            get_gauss_integration_point_ids_3D_Boundary(gp, itg_ids, face_id, kez_map_Hex);
+            return;
+          default:
+            PGFEM_printerr("ERROR: number of spatial dimension %d is not implemented.\n", volume_nsd);
+            print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
+        }              
+      } else{
+        switch(volume_nsd){
+          case 3:
+            get_integration_point_ids_listed_Boundary(gp, itg_ids, volume_nsd, face_id);
+            return;
+          default:
+            PGFEM_printerr("ERROR: number of spatial dimension %d is not implemented.\n", volume_nsd);
+            print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
+        }
       }
     }
 };
@@ -223,11 +479,10 @@ long number_of_integration_points_tri(const int order){
     case 3:
       return 4;
     default:
-      PGFEM_printerr("ERROR: number of integration points: "
-                     " order %d is not yet implemented for TRIANGLE element.\n", order);
-      pgfem3d::PGFEM_Abort();
-      break;
+      PGFEM_printerr("ERROR: number of integration points: order %d is not implemented for TRIANGLE element.\n", order);
+      print_func_file_line_and_abort(__func__,__FILE__,__LINE__); 
   }
+  return 0;
 }
 
 long number_of_integration_points_quad(const int order){
@@ -239,11 +494,10 @@ long number_of_integration_points_quad(const int order){
     case 2:
       return 9;
     default:
-      PGFEM_printerr("ERROR: number of integration points: "
-                     " order %d is not yet implemented for QUADRILATERAL element.\n", order);
-      pgfem3d::PGFEM_Abort();
-      break;
+      PGFEM_printerr("ERROR: number of integration points: order %d is not implemented for QUADRILATERAL element.\n", order);
+      print_func_file_line_and_abort(__func__,__FILE__,__LINE__);       
   }
+  return 0;
 }
 
 long number_of_integration_points_tet(const int order){
@@ -260,10 +514,10 @@ long number_of_integration_points_tet(const int order){
       return 24;
     default:
       PGFEM_printerr("ERROR: number of integration points: "
-                     " order %d is not yet implemented for TETRAHEDRON element.\n", order);
-      pgfem3d::PGFEM_Abort();
-      break;
+                     " order %d is not implemented for TETRAHEDRON element.\n", order);
+      print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
   }
+  return 0;
 }
 
 long number_of_integration_points_hex(const int order){
@@ -278,10 +532,10 @@ long number_of_integration_points_hex(const int order){
       return 27; // 
     default:
       PGFEM_printerr("ERROR: number of integration points: "
-                     " order %d is not yet implemented for HEXAHEDRAL element.\n", order);
-      pgfem3d::PGFEM_Abort();
-      break;
+                     " order %d is not implemented for HEXAHEDRAL element.\n", order);
+      print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
   }
+  return 0;
 }
 
 long
@@ -301,11 +555,11 @@ FEMLIB::determine_integration_type(const int e_type,
       return number_of_integration_points_tet(i_order);
     case HEXAHEDRAL:
       return number_of_integration_points_hex(i_order);
-
     default:
-      PGFEM_printerr("ERROR: element type %d is not yet implemented for finite element integration.\n", e_type);
-      pgfem3d::PGFEM_Abort();
+      PGFEM_printerr("ERROR: element type %d is not implemented.\n", e_type);
+      print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
   }
+  return 0;
 }
 
 void
@@ -316,6 +570,15 @@ FEMLIB::initialization(const int nne,
   this->nsd = nsd;
   this->nne = nne;
   this->elem_type = element_type(nne, nsd);
+  
+  int myrank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+   
+  if(this->curt_elem_id==0 && myrank == 0)
+  {  
+    FemLibBoundary fes(this, 1, i_order);
+    std::cout << "Element type " << this->elem_type << " has boundary element " << fes.elem_type << endl;    
+  }
 
   int e_order = LinearElement;
 
@@ -330,8 +593,6 @@ FEMLIB::initialization(const int nne,
       this->intg_order = 1;
   }  
       
-
-
   this->nint = this->determine_integration_type(this->elem_type, e_order, this->intg_order);
 
   this->ksi.initialization(this->nint,1);
@@ -351,40 +612,39 @@ FEMLIB::initialization(const int nne,
     case TETRAHEDRON:  // intended to flow to next
     case QTETRAHEDRON:
     {
-      if(this->intg_order > 3){
-        PGFEM_printerr("ERROR: Integration order %d is not supported.\n", this->intg_order);
-        pgfem3d::PGFEM_Abort();        
-      }
-
+      bool no_Gaussian = false;
       switch(this->intg_order){
         case 0:
         {
-          QuadratureRule<TetIntegrationPoints1> qr;
+          QuadratureRuleVolume<TetIntegrationPoints1> qr;
           qr.get_integration_points(ksi, eta, zet, weights);
-          qr.get_integration_point_ids(this->itg_ids, this->nsd);
+          qr.get_integration_point_ids(this->itg_ids, this->nsd, no_Gaussian);
           break;
         }
         case 1:
         {
-          QuadratureRule<TetIntegrationPoints4> qr;
+          QuadratureRuleVolume<TetIntegrationPoints4> qr;
           qr.get_integration_points(ksi, eta, zet, weights);
-          qr.get_integration_point_ids(this->itg_ids, this->nsd);
+          qr.get_integration_point_ids(this->itg_ids, this->nsd, no_Gaussian);
           break;
         }
         case 2:
         {
-          QuadratureRule<TetIntegrationPoints5> qr;
+          QuadratureRuleVolume<TetIntegrationPoints5> qr;
           qr.get_integration_points(ksi, eta, zet, weights);
-          qr.get_integration_point_ids(this->itg_ids, this->nsd);
+          qr.get_integration_point_ids(this->itg_ids, this->nsd, no_Gaussian);
           break;
         }
         case 3:
         {
-          QuadratureRule<TetIntegrationPoints5> qr;
+          QuadratureRuleVolume<TetIntegrationPoints5> qr;
           qr.get_integration_points(ksi, eta, zet, weights);
-          qr.get_integration_point_ids(this->itg_ids, this->nsd);
+          qr.get_integration_point_ids(this->itg_ids, this->nsd, no_Gaussian);
           break;
         }
+        default:
+          PGFEM_printerr("ERROR: Integration order %d is not supported.\n", this->intg_order);
+          print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
       }
       
       break;
@@ -392,34 +652,32 @@ FEMLIB::initialization(const int nne,
     case QUADRILATERAL: // intended to flow
     case HEXAHEDRAL:
     {
-      const int gpno = this->intg_order + 1;
-      if(gpno > 3){
-        PGFEM_printerr("ERROR: Number of Gaussian integration points %d is not supported.\n", gpno);
-        pgfem3d::PGFEM_Abort();        
-      }
-      
+      const int gpno = this->intg_order + 1; // number of Gaussian points
       switch(gpno){
         case 1:
         {
-          QuadratureRule<GaussIntegrationPoints1> qr;
+          QuadratureRuleVolume<GaussIntegrationPoints1> qr;
           qr.get_integration_points(ksi, eta, zet, weights);
           qr.get_integration_point_ids(this->itg_ids, this->nsd);
           break;
         }
         case 2:
         {
-          QuadratureRule<GaussIntegrationPoints2> qr;
+          QuadratureRuleVolume<GaussIntegrationPoints2> qr;
           qr.get_integration_points(ksi, eta, zet, weights);
           qr.get_integration_point_ids(this->itg_ids, this->nsd);
           break;
         }
         case 3:
         {
-          QuadratureRule<GaussIntegrationPoints3> qr;
+          QuadratureRuleVolume<GaussIntegrationPoints3> qr;
           qr.get_integration_points(ksi, eta, zet, weights);
           qr.get_integration_point_ids(this->itg_ids, this->nsd);
           break;
         }
+        default:
+          PGFEM_printerr("ERROR: Number of Gaussian integration points %d is not implemented.\n", gpno);
+          print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
       }
       break;                 
     }
@@ -477,7 +735,7 @@ FEMLIB::initialization(int e,
       this->u0.initialization(nne_t, 3, 0.0);
       Matrix<double> X(nne_t, 1), Y(nne_t, 1), Z(nne_t, 1);
       nodecoord_total(nne,nod,node,X.m_pdata,Y.m_pdata,Z.m_pdata);
-      for(int ia=0; ia<nne; ia++)
+      for(int ia=0; ia<nne; ++ia)
       {
         this->u0(ia,0) = X(ia) - (pF0I[0]*X(ia) + pF0I[1]*Y(ia) + pF0I[2]*Z(ia));
         this->u0(ia,1) = Y(ia) - (pF0I[3]*X(ia) + pF0I[4]*Y(ia) + pF0I[5]*Z(ia));
@@ -509,60 +767,76 @@ FEMLIB::initialization(int e,
 void
 FEMLIB::elem_shape_function(long ip, int nne, double *N)
 {
-  double ksi_, eta_, zet_;
-
-  int itg_id_ip_1 = this->itg_ids(ip, 0);
-  int itg_id_ip_2 = this->itg_ids(ip, 1);
-  int itg_id_ip_3 = this->itg_ids(ip, 2);
-
-  if(this->elem_type == HEXAHEDRAL)
-  {// hexahedron
-    ksi_ = this->ksi(itg_id_ip_1);
-    eta_ = this->eta(itg_id_ip_2);
-    zet_ = this->zet(itg_id_ip_3);
+  if(nne == 1){ // constant
+    N[0] = 1.0;
+    return;
   }
-  else
-  { // tetrahedron type
-    ksi_ = this->ksi(itg_id_ip_3);
-    eta_ = this->eta(itg_id_ip_3);
-    zet_ = this->zet(itg_id_ip_3);
+  
+  double ksi_ = {};
+  double eta_ = {};
+  double zet_ = {};
+  switch(this->nsd){
+    case 3: // intended to flow
+      zet_ = this->zet(this->itg_ids(ip, 2));
+    case 2: // intended to flow
+      eta_ = this->eta(this->itg_ids(ip, 1));
+    case 1: 
+      ksi_ = this->ksi(this->itg_ids(ip, 0));
   }
+  FEM_shape_functions(this->elem_type, ksi_, eta_, zet_, N);
+}
 
-  shape_func(ksi_, eta_, zet_, nne, N);
+double
+FEMLIB::compute_integration_weight(const int ip){
+  double wt = 0.0;
+  switch(this->elem_type){
+    case TRIANGLE:    // intended to flow for triangle type of element
+    case QTRIANGLE:
+    case TETRAHEDRON:
+    case QTETRAHEDRON:
+      wt = this->weights(this->itg_ids(ip, 0));
+      break;
+    case LINE:
+    case QLINE:
+      wt = this->weights(this->itg_ids(ip, 0));
+      break;      
+    case QUADRILATERAL:
+      wt = this->weights(this->itg_ids(ip, 0))
+          *this->weights(this->itg_ids(ip, 1));
+      break;
+    case HEXAHEDRAL:
+      wt = this->weights(this->itg_ids(ip, 0))
+          *this->weights(this->itg_ids(ip, 1))
+          *this->weights(this->itg_ids(ip, 2));
+      break;
+    default:
+      PGFEM_printerr("ERROR: FEM integration for element %d is not implemented.\n", this->elem_type);
+      print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
+  }
+  return wt;
 }
 
 void
 FEMLIB::elem_basis_V(long ip)
 {
   this->curt_itg_id = ip;
-  double ksi_, eta_, zet_, wt;
 
-  int itg_id_ip_1 = this->itg_ids(ip, 0);
-  int itg_id_ip_2 = this->itg_ids(ip, 1);
-  int itg_id_ip_3 = this->itg_ids(ip, 2);
-
-  if(this->elem_type == HEXAHEDRAL)
-  {// hexahedron
-    ksi_ = this->ksi(itg_id_ip_1);
-    eta_ = this->eta(itg_id_ip_2);
-    zet_ = this->zet(itg_id_ip_3);
-
-    wt = this->weights(itg_id_ip_1)*this->weights(itg_id_ip_2)*this->weights(itg_id_ip_3);
+  double ksi_ = {}, eta_ = {}, zet_ = {};
+  switch(this->nsd){
+    case 3: // intended to flow
+      zet_ = this->zet(this->itg_ids(ip, 2));
+    case 2: // intended to flow
+      eta_ = this->eta(this->itg_ids(ip, 1));
+    case 1: 
+      ksi_ = this->ksi(this->itg_ids(ip, 0));
   }
-  else
-  { // tetrahedron type
-    ksi_ = this->ksi(itg_id_ip_3);
-    eta_ = this->eta(itg_id_ip_3);
-    zet_ = this->zet(itg_id_ip_3);
-    wt = this->weights(itg_id_ip_3);
-  }
+  FEM_shape_functions(this->elem_type, ksi_, eta_, zet_, this->N.m_pdata);
+  double wt = this->compute_integration_weight(ip);
 
   this->temp_v.ksi_ip = ksi_;
   this->temp_v.eta_ip = eta_;
   this->temp_v.zet_ip = zet_;
   this->temp_v.w_ip   = wt;
-
-  shape_func(ksi_, eta_, zet_, this->nne, this->N.m_pdata);
 
   this->detJ = deriv(ksi_, eta_, zet_, this->nne,
                      this->temp_v.x.m_pdata,   this->temp_v.y.m_pdata,   this->temp_v.z.m_pdata,
@@ -609,7 +883,7 @@ FEMLIB::update_deformation_gradient(const int ndofn, double *u, double *F, doubl
   else
   {
     Matrix<double> r_e(ndofn*this->nne, 1, 0.0);          
-    for(int ia=0; ia<this->nne; ia++)
+    for(int ia=0; ia<this->nne; ++ia)
     {
       r_e.m_pdata[ia*ndofn+0] = u[ia*ndofn+0] + this->u0(ia,0);
       r_e.m_pdata[ia*ndofn+1] = u[ia*ndofn+1] + this->u0(ia,1);
@@ -641,13 +915,18 @@ FEMLIB::~FEMLIB()
     PGFEM_free(ST);
 }
 
-int nne_2D(const int nne_3D){
-  switch(nne_3D){
-  case TETRAHEDRON:  // Tet --> Tri
+int nne_boundary(const int elem_type){
+  switch(elem_type){
+  case TRIANGLE:      // tri  -> line
+  case QUADRILATERAL: // quad -> line  
+    return 2;
+  case QTRIANGLE:     // qtri -> qline
     return 3;
-  case QTETRAHEDRON: // qTet ->> qTri
+  case TETRAHEDRON:   // Tet --> Tri
+    return 3;
+  case QTETRAHEDRON:  // qTet ->> qTri
     return 6;
-  case HEXAHEDRAL: // Hex --> quad
+  case HEXAHEDRAL:    // Hex --> quad
     return 4;
   default:
     PGFEM_printerr("WARNING: unrecognized element type for 2D femlib: %s:%s:%d\n",
@@ -657,14 +936,38 @@ int nne_2D(const int nne_3D){
   return 0;
 }
 
+void
+FemLibBoundary::set_volume_to_boundary_map(void){
+  switch(this->feVol->elem_type){
+    case TETRAHEDRON:
+      this->Volume2Boundary = Tet2Tri[this->face_id];
+      this->kez_map         = kez_map_Tet[this->face_id];
+      break;
+    case QTETRAHEDRON:
+      this->Volume2Boundary = QTet2QTri[this->face_id];
+      this->kez_map         = kez_map_Tet[this->face_id];
+      break;
+    case HEXAHEDRAL:
+      this->Volume2Boundary = Hex2Quad[this->face_id];
+      this->kez_map         = kez_map_Hex[this->face_id];
+      break;
+    default:
+      PGFEM_printerr("ERROR: Boundary integration for "
+                     "%d element is not implemented.\n", this->feVol->elem_type);
+      print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
+  }
+}
 
 void
-FemLib2D::initialization(const FEMLIB *fe,
-                         const int face_id,
-                         const int i_order)
+FemLibBoundary::initialization(const FEMLIB *fe,
+                               const int face_id,
+                               const int i_order)
 {
-  this->nsd = 3;
-  this->nne = nne_2D(fe->nne);
+  this->feVol = fe;
+  this->face_id = face_id;
+  this->nsd = fe->nsd;
+  this->nne = nne_boundary(fe->elem_type);
+  this->curt_elem_id = fe->curt_elem_id;
   this->elem_type = element_type(this->nne, 2);
   
   int e_order = LinearElement;
@@ -677,8 +980,12 @@ FemLib2D::initialization(const FEMLIB *fe,
     // these elements need at least 1st order accuracy
     if(this->elem_type == QUADRILATERAL || this->elem_type == QTRIANGLE)
       this->intg_order = 1;
-  } 
-
+  }
+  
+  // set maps for node id and integration points from volum to boundary element
+  // volume femlib(fe) needs to be set prior to this
+  this->set_volume_to_boundary_map();
+  
   this->nint = this->determine_integration_type(this->elem_type, e_order, this->intg_order);
     
   this->ksi.initialization(this->nint,1);
@@ -686,46 +993,161 @@ FemLib2D::initialization(const FEMLIB *fe,
   this->zet.initialization(this->nint,1);
   this->weights.initialization(this->nint,1);
   
-  this->N.initialization(this->nne, 1);
-  this->dN.initialization(this->nne, this->nsd);
-  this->x_ip.initialization(this->nsd ,1);
+  this->N.initialization(this->feVol->nne, 1);
+  this->dN.initialization(this->feVol->nne, this->feVol->nsd);
+  this->x_ip.initialization(this->feVol->nsd ,1);
   this->node_coord.initialization(this->nne ,this->nsd);
   this->node_id.initialization(this->nne,1);
   
-//  int tmp;
-  switch(this->elem_type){
+  switch(fe->elem_type){
     case TRIANGLE:
-//      get_tria_quadrature_rule(this->intg_order, &tmp,
-//                               this->ksi.m_pdata, 
-//                               this->eta.m_pdata,
-//                               this->weights.m_pdata);
-      break;
+    case QUADRILATERAL:
+      PGFEM_printerr("ERROR: Boundary integration for elelement %d is not implemented.\n", fe->elem_type);
+      print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
+    case TETRAHEDRON:  // intended to flow
     case QTETRAHEDRON:
-//      get_tria_quadrature_rule(this->intg_order, &tmp,
-//                               this->ksi.m_pdata, 
-//                               this->eta.m_pdata,
-//                               this->weights.m_pdata);
+    {
+      bool no_Gaussian = false;
+      if(this->intg_order > 3){
+        PGFEM_printerr("ERROR: Integration order %d is not supported for element %d\n", this->intg_order, this->elem_type);
+        print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
+      }    
+      switch(this->intg_order){
+        case 0:
+        {
+          QuadratureRuleBoundary<TriIntegrationPoints1> qr;
+          qr.get_integration_points(ksi, eta, zet, weights, face_id, fe->elem_type);
+          qr.get_integration_point_ids(this->itg_ids, this->nsd, face_id, no_Gaussian);
+          break;
+        }
+        case 1:
+        {
+          QuadratureRuleBoundary<TriIntegrationPoints3> qr;
+          qr.get_integration_points(ksi, eta, zet, weights, face_id, fe->elem_type);
+          qr.get_integration_point_ids(this->itg_ids, this->nsd, face_id, no_Gaussian);
+          break;
+        }
+        case 2:
+        {
+          QuadratureRuleBoundary<TriIntegrationPoints4> qr;
+          qr.get_integration_points(ksi, eta, zet, weights, face_id, fe->elem_type);
+          qr.get_integration_point_ids(this->itg_ids, this->nsd, face_id, no_Gaussian);
+          break;
+        }                
+      }
+      break;
+    }
     case HEXAHEDRAL:
+    {
+      const int gpno = this->intg_order + 1;
+      if(gpno > 3){
+        PGFEM_printerr("ERROR: Number of Gaussian integration points %d is not supported.\n", gpno);
+        print_func_file_line_and_abort(__func__,__FILE__,__LINE__);        
+      }
+      
+      switch(gpno){
+        case 1:
+        {
+          QuadratureRuleBoundary<GaussIntegrationPoints1> qr;
+          qr.get_integration_points(ksi, eta, zet, weights, face_id, fe->elem_type);
+          qr.get_integration_point_ids(this->itg_ids, this->nsd, face_id);
+          break;
+        }
+        case 2:
+        {
+          QuadratureRuleBoundary<GaussIntegrationPoints2> qr;
+          qr.get_integration_points(ksi, eta, zet, weights, face_id, fe->elem_type);
+          qr.get_integration_point_ids(this->itg_ids, this->nsd, face_id);
+          break;
+        }
+        case 3:
+        {
+          QuadratureRuleBoundary<GaussIntegrationPoints3> qr;
+          qr.get_integration_points(ksi, eta, zet, weights, face_id, fe->elem_type);
+          qr.get_integration_point_ids(this->itg_ids, this->nsd, face_id);
+          break;
+        }
+      }
+      break;
+    }
     default:
-      PGFEM_printerr("ERROR: 3D surface integration: "
+      PGFEM_printerr("ERROR: Boundary integration for "
                      "%d element is supported.\n", fe->elem_type);
-      pgfem3d::PGFEM_Abort();
+      print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
       break;
   }
-  /*
-  this->fe3D = fe;
+  
+  if(this->nsd == 3){
+    this->ST_tensor = (double ****) aloc4(3,3,nsd,nne);
+    this->ST = (double *) aloc1(3*3*nsd*nne);
+  }
 
-  int int_order = 1;
+  this->temp_v.set_variable_size(this->nne, this->nne);
+  
+  double *x = (this->temp_v).x.m_pdata; // no memory is allocated
+  double *y = (this->temp_v).y.m_pdata;
+  double *z = (this->temp_v).z.m_pdata;  
 
-  if(this->fe3D->nne == 10)
-    int_order = 2;
+  for(int ia=0; ia<this->nne; ++ia){
+    int id_V2B = this->Volume2Boundary[ia];
+    this->node_id(ia) = this->feVol->node_id.m_pdata[id_V2B];
+    x[ia] = fe->temp_v.x.m_pdata[id_V2B];
+    y[ia] = fe->temp_v.y.m_pdata[id_V2B];
+    z[ia] = fe->temp_v.z.m_pdata[id_V2B];        
 
-  this->nne = nne_2D(this->fe3D->nne);
+    this->node_coord(ia, 0) = x[ia];
+    this->node_coord(ia, 1) = y[ia];
+    this->node_coord(ia, 2) = z[ia];
+  }
+}
 
-  Matrix<double> ksi_3D;
-  integrate_surface(this->fe3D->nne, face_id, int_order,
-                    &(this->nint),&ksi_3D,&eta_3D,&zet_3D,
-                               &ksi_2D,&eta_2D,&wt_2D,
-                               &nne_2D,&nod_2D);
-*/
+double FemLibBoundary::compute_integration_weight(const int ip){
+  double wt = 0.0;
+  const int itg_ids_0 = this->itg_ids(ip, kez_map[0]);  
+
+  switch(this->feVol->elem_type){
+    case TRIANGLE:    // intended to flow for triangle type of element
+    case QTRIANGLE:
+    case TETRAHEDRON:
+    case QTETRAHEDRON:
+    case QUADRILATERAL:
+    case LINE:
+    case QLINE:      
+      wt = this->weights(itg_ids_0);
+      break;      
+    case HEXAHEDRAL:
+    {
+      const int itg_ids_1 = this->itg_ids(ip, kez_map[1]);
+      wt = this->weights(itg_ids_0)
+          *this->weights(itg_ids_1);
+      break;
+    }
+    default:
+      PGFEM_printerr("ERROR: FEM integration for element %d is not implemented.\n", this->elem_type);
+      print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
+  }
+  return wt;  
+}
+
+void
+FemLibBoundary::elem_basis_S(const int ip)
+{
+  this->curt_itg_id = ip;
+
+  double ksi_ = {}, eta_ = {}, zet_ = {};
+  switch(this->nsd){
+    case 3: // intended to flow
+      zet_ = this->zet(this->itg_ids(ip, 2));
+    case 2: // intended to flow
+      eta_ = this->eta(this->itg_ids(ip, 1));
+    case 1: 
+      ksi_ = this->ksi(this->itg_ids(ip, 0));
+  }
+  FEM_shape_functions(this->feVol->elem_type, ksi_, eta_, zet_, this->N.m_pdata);
+  double wt = this->compute_integration_weight(ip);
+
+  this->temp_v.ksi_ip = ksi_;
+  this->temp_v.eta_ip = eta_;
+  this->temp_v.zet_ip = zet_;
+  this->temp_v.w_ip   = wt;
 }

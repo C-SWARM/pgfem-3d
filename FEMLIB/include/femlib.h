@@ -5,23 +5,6 @@
 #include "element.h"
 #include "node.h"
 
-static const constexpr int LinearElement    = 0;
-static const constexpr int QuadraticElement = 1;
-
-static const constexpr int FemDim0D = 0;
-static const constexpr int FemDim1D = 1;
-static const constexpr int FemDim2D = 2;
-static const constexpr int FemDim3D = 3;
-
-static const constexpr int Tet2Tri[4][3] = {{0,2,1},{0,1,3},{1,2,3},{0,3,2}};
-static const constexpr int QTetQTri[4][6] = {{0,2,1,6,5,4},{0,1,3,4,8,7},{1,2,3,5,9,8},{0,3,2,7,9,6}};
-static const constexpr int Hex2Quad[6][4] = {{3,2,1,0},{7,4,5,6},{0,1,5,4},{2,6,5,1},{3,7,6,2},{3,0,4,7}};
-
-static const constexpr int element_type(const int nne,
-                                        const int dim){
-  return dim*10 + nne;
-}
-
 class TEMP_VARIABLES
 {
  public:
@@ -97,6 +80,7 @@ class FEMLIB
   void elem_shape_function(long ip,
                            int nne,
                            double *N);
+  double compute_integration_weight(const int ip);
   void elem_basis_V(long ip);
   void update_shape_tensor(void);
   void update_deformation_gradient(const int ndofn,
@@ -109,14 +93,17 @@ class FEMLIB
   double elem_volume(void);
 };
 
-class FemLib2D : public FEMLIB{
+class FemLibBoundary : public FEMLIB{
 public:
-  const FEMLIB *fe3D;
+  const FEMLIB *feVol;
+  const int *Volume2Boundary;
+  const int *kez_map;
+  int face_id;
 
-  FemLib2D(){};
-  FemLib2D(const FEMLIB *fe,
-           const int face_id,
-           const int i_order){
+  FemLibBoundary(){};
+  FemLibBoundary(const FEMLIB *fe,
+                 const int face_id,
+                 const int i_order){
     initialization(fe, face_id, i_order);
   };
 
@@ -124,6 +111,9 @@ public:
                       const int face_id,
                       const int i_order);
 
+  void set_volume_to_boundary_map(void);
+  double compute_integration_weight(const int ip);  
+  void elem_basis_S(const int ip);
 };
 
 #endif // #define FEMLIB_FEMLIB_H
