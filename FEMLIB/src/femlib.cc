@@ -79,11 +79,11 @@ void print_func_file_line_and_abort(const char *fname,
  pgfem3d::PGFEM_Abort();
 }
 
-void FEM_shape_functions(const int element_type, 
-                         const double ksi,
-                         const double eta,
-                         const double zet,
-                         double *N){
+void PGFem3D_N(const int element_type, 
+               const double ksi,
+               const double eta,
+               const double zet,
+               double *N){
   switch(element_type){
     case LINE:
       N[0] = 0.5*(1.0 - ksi);
@@ -95,9 +95,9 @@ void FEM_shape_functions(const int element_type,
       N[2] = 0.5*(1.0 + ksi)*ksi;
       break;
     case TRIANGLE:
-      N[0]= 0.25*(1.0 - ksi)*(1.0 - eta);
-      N[1]= 0.25*(1.0 + ksi)*(1.0 - eta);
-      N[2]= 0.50*(1.0 + eta);
+      N[0] = 1.-ksi-eta;
+      N[1] = ksi;
+      N[2] = eta;
       break;
     case QUADRILATERAL:
       N[0] = 0.25*(1.0 - ksi)*(1.0 - eta);
@@ -106,6 +106,12 @@ void FEM_shape_functions(const int element_type,
       N[3] = 0.25*(1.0 - ksi)*(1.0 + eta);
       break;
     case QTRIANGLE:
+      N[0] = (1.0 - ksi - eta)*(1.0 - 2.0*ksi - 2.0*eta);
+      N[1] = ksi*(2.0*ksi - 1.0);
+      N[2] = eta*(2.0*eta - 1.0);
+      N[3] = 4.0*ksi*(1.0 - ksi - eta);
+      N[4] = 4.0*ksi*eta;
+      N[5] = 4.0*eta*(1.0 - ksi - eta);      
       break;
     case TETRAHEDRON:
       N[0] = (1.0 - ksi - eta - zet);
@@ -129,15 +135,18 @@ void FEM_shape_functions(const int element_type,
       break;
     }
     case HEXAHEDRAL:
-      N[0] = 1.0/8.0*(1.0 - ksi)*(1.0 - eta)*(1.0 - zet);
-      N[1] = 1.0/8.0*(1.0 + ksi)*(1.0 - eta)*(1.0 - zet);
-      N[2] = 1.0/8.0*(1.0 + ksi)*(1.0 + eta)*(1.0 - zet);
-      N[3] = 1.0/8.0*(1.0 - ksi)*(1.0 + eta)*(1.0 - zet);  
-      N[4] = 1.0/8.0*(1.0 - ksi)*(1.0 - eta)*(1.0 + zet);
-      N[5] = 1.0/8.0*(1.0 + ksi)*(1.0 - eta)*(1.0 + zet);
-      N[6] = 1.0/8.0*(1.0 + ksi)*(1.0 + eta)*(1.0 + zet);
-      N[7] = 1.0/8.0*(1.0 - ksi)*(1.0 + eta)*(1.0 + zet);
+    {
+      const double one8 = 0.125;
+      N[0] = one8*(1.0 - ksi)*(1.0 - eta)*(1.0 - zet);
+      N[1] = one8*(1.0 + ksi)*(1.0 - eta)*(1.0 - zet);
+      N[2] = one8*(1.0 + ksi)*(1.0 + eta)*(1.0 - zet);
+      N[3] = one8*(1.0 - ksi)*(1.0 + eta)*(1.0 - zet);  
+      N[4] = one8*(1.0 - ksi)*(1.0 - eta)*(1.0 + zet);
+      N[5] = one8*(1.0 + ksi)*(1.0 - eta)*(1.0 + zet);
+      N[6] = one8*(1.0 + ksi)*(1.0 + eta)*(1.0 + zet);
+      N[7] = one8*(1.0 - ksi)*(1.0 + eta)*(1.0 + zet);
       break;
+    }  
     case WEDGE:
       N[0] = 0.5*(1.0 - zet)*ksi;
       N[1] = 0.5*(1.0 - zet)*eta;
@@ -145,6 +154,134 @@ void FEM_shape_functions(const int element_type,
       N[3] = 0.5*(1.0 + zet)*ksi;
       N[4] = 0.5*(1.0 + zet)*eta;
       N[5] = 0.5*(1.0 + zet)*(1.0-ksi-eta);
+    default:
+      PGFEM_printerr("ERROR: Sahpe function for element %d is not implemented.\n", element_type);
+      print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
+  }
+}
+
+void PGFem3D_dN(const int element_type, 
+                const double ksi,
+                const double eta,
+                const double zet,
+                Matrix<double> &dN){
+  switch(element_type){
+    case LINE:
+      dN(0,0) = -0.5;;
+      dN(0,1) = 0.5;
+      break;
+    case QLINE:
+      dN(0, 0) = -0.5 + ksi;
+      dN(1, 0) = -2.0*ksi;
+      dN(2, 0) = 0.5 + ksi;
+      break;
+    case TRIANGLE:
+      dN(0, 0) = -1.0; dN(0, 1) = -1.0;
+      dN(1, 0) =  1.0; dN(1, 1) =  0.0;
+      dN(2, 0) =  0.0; dN(2, 1) =  1.0;
+      break;
+    case QUADRILATERAL:
+      dN(0, 0) = 0.25*(eta - 1.0);  dN(0, 1) = 0.25*(ksi - 1.0);
+      dN(1, 0) = 0.25*(1.0 - eta);  dN(1, 1) = 0.25*(-1.0 - ksi);
+      dN(2, 0) = 0.25*(1.0 + eta);  dN(2, 1) = 0.25*(1.0 + ksi);
+      dN(3, 0) = 0.25*(-1.0 - eta); dN(3, 1) = 0.25*(1.0 - ksi);
+      break;
+    case QTRIANGLE:
+      dN(0, 0) = 4.0*eta + 4.0*ksi - 3.0; dN(0, 1) = 4.0*eta + 4.0*ksi - 3.0;
+      dN(1, 0) =           4.0*ksi - 1.0; dN(1, 1) =                     0.0;
+      dN(2, 0) =                     0.0; dN(2, 1) =           4.0*eta - 1.0;
+      dN(3, 0) = 4.0 - 8.0*ksi - 4.0*eta; dN(3, 1) =                -4.0*ksi;
+      dN(4, 0) =                 4.0*eta; dN(4, 1) =                 4.0*ksi;
+      dN(5, 0) =                -4.0*eta; dN(5, 1) = 4.0 - 4.0*ksi - 8.0*eta;
+      break;
+    case TETRAHEDRON:
+      dN(0, 0) = -1.0; dN(0, 1) = -1.0; dN(0, 2) = -1.0;      
+      dN(1, 0) = +1.0; dN(1, 1) =  0.0; dN(1, 2) =  0.0;      
+      dN(2, 0) =  0.0; dN(2, 1) = +1.0; dN(2, 2) =  0.0;      
+      dN(3, 0) =  0.0; dN(3, 1) =  0.0; dN(3, 2) = +1.0;
+      break;
+    case QTETRAHEDRON:
+    {
+      dN(0, 0) = 4.0*(ksi+eta+zet)-3.0;
+      dN(0, 1) = 4.0*(eta+ksi+zet)-3.0;
+      dN(0, 2) = 4.0*(zet+ksi+eta)-3.0;
+      dN(1, 0) = 4.0*ksi-1.0;
+      dN(1, 1) = 0.0;
+      dN(1, 2) = 0.0;
+      dN(2, 0) = 0.0;
+      dN(2, 1) = 4.0*eta-1.0;
+      dN(2, 2) = 0.0;
+      dN(3, 0) = 0.0;
+      dN(3, 1) = 0.0;
+      dN(3, 2) = 4.0*zet-1.0;
+      dN(4, 0) = 4.0*(-2.0*ksi-eta-zet+1.0);
+      dN(4, 1) = -4.0*ksi;
+      dN(4, 2) = -4.0*ksi;
+      dN(5, 0) = 4.0*eta;
+      dN(5, 1) = 4.0*ksi;
+      dN(5, 2) = 0.0;
+      dN(6, 0) = -4.0*eta;
+      dN(6, 1) = 4.0*(-ksi-2.0*eta-zet+1.0);
+      dN(6, 2) = -4.0*eta;
+      dN(7, 0) = -4.0*zet;
+      dN(7, 1) = -4.0*zet;
+      dN(7, 2) = 4.0*(-ksi-eta-2.0*zet+1.0);
+      dN(8, 0) = 4.0*zet;
+      dN(8, 1) = 0.0;
+      dN(8, 2) = 4.0*ksi;
+      dN(9, 0) = 0.0;
+      dN(9, 1) = 4.0*zet;
+      dN(9, 2) = 4.0*eta;
+      break;
+    }
+    case HEXAHEDRAL:
+    {
+      const double one8 = 0.125; // = 1/8
+      dN(0, 0) = -one8*(1.0 - eta)*(1.0 - zet);
+      dN(0, 1) = -one8*(1.0 - ksi)*(1.0 - zet);
+      dN(0, 2) = -one8*(1.0 - ksi)*(1.0 - eta);      
+      dN(1, 0) = +one8*(1.0 - eta)*(1.0 - zet);
+      dN(1, 1) = -one8*(1.0 + ksi)*(1.0 - zet);
+      dN(1, 2) = -one8*(1.0 + ksi)*(1.0 - eta);      
+      dN(2, 0) = +one8*(1.0 + eta)*(1.0 - zet);
+      dN(2, 1) = +one8*(1.0 + ksi)*(1.0 - zet);
+      dN(2, 2) = -one8*(1.0 + ksi)*(1.0 + eta);
+      dN(3, 0) = -one8*(1.0 + eta)*(1.0 - zet);
+      dN(3, 1) = +one8*(1.0 - ksi)*(1.0 - zet);
+      dN(3, 2) = -one8*(1.0 - ksi)*(1.0 + eta);
+      dN(4, 0) = -one8*(1.0 - eta)*(1.0 + zet);
+      dN(4, 1) = -one8*(1.0 - ksi)*(1.0 + zet);
+      dN(4, 2) = +one8*(1.0 - ksi)*(1.0 - eta);
+      dN(5, 0) = +one8*(1.0 - eta)*(1.0 + zet);
+      dN(5, 1) = -one8*(1.0 + ksi)*(1.0 + zet);
+      dN(5, 2) = +one8*(1.0 + ksi)*(1.0 - eta);
+      dN(6, 0) = +one8*(1.0 + eta)*(1.0 + zet);
+      dN(6, 1) = +one8*(1.0 + ksi)*(1.0 + zet);
+      dN(6, 2) = +one8*(1.0 + ksi)*(1.0 + eta);
+      dN(7, 0) = -one8*(1.0 + eta)*(1.0 + zet);
+      dN(7, 1) = +one8*(1.0 - ksi)*(1.0 + zet);
+      dN(7, 2) = +one8*(1.0 - ksi)*(1.0 + eta);
+      break;
+    }
+    case WEDGE:
+      dN(0, 0) = 0.5*(1.0-zet);
+      dN(0, 1) = 0.0;
+      dN(0, 2) = -0.5*ksi;
+      dN(1, 0) = 0.0;
+      dN(1, 1) = 0.5*(1.0-zet);
+      dN(1, 2) = -0.5*eta;
+      dN(2, 0) = -0.5*(1.0-zet);
+      dN(2, 1) = -0.5*(1.0-zet);
+      dN(2, 2) = -0.5*(1.0-ksi-eta);
+      dN(3, 0) = 0.5*(1.0+zet);
+      dN(3, 1) = 0.0;
+      dN(3, 2) = 0.5*ksi;
+      dN(4, 0) = 0.0;
+      dN(4, 1) = 0.5*(1.0+zet);
+      dN(4, 2) = 0.5*eta;
+      dN(5, 0) = -0.5*(1.0+zet);
+      dN(5, 1) = -0.5*(1.0+zet);
+      dN(5, 2) = 0.5*(1.0-ksi-eta);
     default:
       PGFEM_printerr("ERROR: Sahpe function for element %d is not implemented.\n", element_type);
       print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
@@ -545,8 +682,9 @@ FEMLIB::determine_integration_type(const int e_type,
 {
   switch(e_type){
     case LINE:
-      return number_of_integration_points_line(i_order);
+      return number_of_integration_points_line(i_order);      
     case TRIANGLE:
+    case QTRIANGLE:      
       return number_of_integration_points_tri(i_order);
     case QUADRILATERAL:
       return number_of_integration_points_quad(i_order);
@@ -571,15 +709,6 @@ FEMLIB::initialization(const int nne,
   this->nne = nne;
   this->elem_type = element_type(nne, nsd);
   
-  int myrank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-   
-  if(this->curt_elem_id==0 && myrank == 0)
-  {  
-    FemLibBoundary fes(this, 1, i_order);
-    std::cout << "Element type " << this->elem_type << " has boundary element " << fes.elem_type << endl;    
-  }
-
   int e_order = LinearElement;
 
   if(this->elem_type == QTETRAHEDRON)
@@ -783,7 +912,7 @@ FEMLIB::elem_shape_function(long ip, int nne, double *N)
     case 1: 
       ksi_ = this->ksi(this->itg_ids(ip, 0));
   }
-  FEM_shape_functions(this->elem_type, ksi_, eta_, zet_, N);
+  PGFem3D_N(this->elem_type, ksi_, eta_, zet_, N);
 }
 
 double
@@ -819,6 +948,20 @@ FEMLIB::compute_integration_weight(const int ip){
 void
 FEMLIB::elem_basis_V(long ip)
 {
+  int myrank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+   
+  if(this->curt_elem_id==0 && myrank == 0 && ip == 0)
+  {  
+    FemLibBoundary fes(this, 0, this->intg_order);
+    //std::cout << "Element type " << this->elem_type << " has boundary element " << fes.elem_type << endl;
+    
+    for(int ia=0; ia<fes.nint; ++ia){
+      fes.elem_basis_S(ia);
+      fes.N.print("N");
+    }
+  }
+  
   this->curt_itg_id = ip;
 
   double ksi_ = {}, eta_ = {}, zet_ = {};
@@ -830,7 +973,7 @@ FEMLIB::elem_basis_V(long ip)
     case 1: 
       ksi_ = this->ksi(this->itg_ids(ip, 0));
   }
-  FEM_shape_functions(this->elem_type, ksi_, eta_, zet_, this->N.m_pdata);
+  PGFem3D_N(this->elem_type, ksi_, eta_, zet_, this->N.m_pdata);
   double wt = this->compute_integration_weight(ip);
 
   this->temp_v.ksi_ip = ksi_;
@@ -1143,7 +1286,7 @@ FemLibBoundary::elem_basis_S(const int ip)
     case 1: 
       ksi_ = this->ksi(this->itg_ids(ip, 0));
   }
-  FEM_shape_functions(this->feVol->elem_type, ksi_, eta_, zet_, this->N.m_pdata);
+  PGFem3D_N(this->feVol->elem_type, ksi_, eta_, zet_, this->N.m_pdata);
   double wt = this->compute_integration_weight(ip);
 
   this->temp_v.ksi_ip = ksi_;
