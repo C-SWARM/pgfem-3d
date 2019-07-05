@@ -13,7 +13,7 @@ contrib_tars=(
 
 # set matching md5sums for each tarball
 contrib_md5=(
-    "60124d711c0a314a787e4998329ce7e0" # multiscale net
+    "ec2816e5cf1364470d6358438b784439" # multiscale net
 )
 
 # and matching target contrib directories

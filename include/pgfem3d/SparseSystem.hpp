@@ -1,13 +1,7 @@
 #ifndef PGFEM3D_SPARSE_SYSTEM_HPP
 #define PGFEM3D_SPARSE_SYSTEM_HPP
 
-#ifdef HAVE_PGFEM_MPI
-#define HAVE_MPI 1
-#endif
 #include "msnet/Network.hpp"
-#ifdef HAVE_PGFEM_MPI
-#undef HAVE_MPI
-#endif
 #include "PGFem3D_options.h"
 #include "datatype.hpp"
 

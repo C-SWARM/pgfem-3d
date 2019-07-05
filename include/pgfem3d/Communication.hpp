@@ -2,19 +2,11 @@
 #define PGFEM3D_COMMUNICATION_H
 
 /// @brief This file defines the system-wide Communication abstractions
-#ifdef HAVE_PGFEM_MPI
-#define HAVE_MPI 1
-#endif
 #include "msnet/Communication.hpp"
 #include "msnet/Multiscale.hpp"
 #include "pgfem3d/Solver.hpp"
 #include "datatype.hpp"
 #include <cassert>
-
-#ifdef HAVE_PGFEM_MPI
-#undef HAVE_MPI
-#endif
-
 #include <cstdio>
 #include <string>
 #include <vector>
