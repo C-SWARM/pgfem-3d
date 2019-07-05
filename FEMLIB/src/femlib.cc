@@ -71,7 +71,9 @@ static const constexpr int kez_map_Tet[4][4] = {{0,1, 2, 0},  // ksi2D(0) -> ksi
                                                 {0,1, 2, 0},  // ksi2D(0) -> ksi3D(0), eta2D(1) -> eta3D(1), zet3D(2) = 1 - ksi_3D - eta_3D;
                                                 {1,2, 0, 0}}; // ksi2D(0) -> eta3D(1), eta2D(1) -> zet3D(2), ksi3D(0) = 0
                                                   
+/// print errors and abort PGFem3D
 /// 
+/// \param[in]  fname function  
 void print_func_file_line_and_abort(const char *fname,
                                     const char *filename,
                                     const int line){
@@ -160,11 +162,11 @@ void PGFem3D_N(const int element_type,
   }
 }
 
-void PGFem3D_dN(const int element_type, 
-                const double ksi,
-                const double eta,
-                const double zet,
-                Matrix<double> &dN){
+void compute_dN_dkez(const int element_type, 
+                    const double ksi,
+                    const double eta,
+                    const double zet,
+                    Matrix<double> &dN){
   switch(element_type){
     case LINE:
       dN(0,0) = -0.5;;
@@ -287,6 +289,172 @@ void PGFem3D_dN(const int element_type,
       print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
   }
 }
+
+void compute_dX_dkez(const int nne,
+                     const int nsd,
+                     Matrix<double> &dN_kez,
+                     Matrix<double> &X,
+                     Matrix<double> &dX)
+{
+  dX.set_values(0.0);
+
+  for(int ib=0; ib<nsd; ++ib){
+    for(int ic=0; ic<nsd; ++ic){
+      for(int ia=0; ia<nne; ++ia)
+        dX(ib,ic) += dN_kez(ia, ic)*X(ia, ib);
+    }
+  }
+}
+
+/// compute determinant of a [size]x[size] Matrix
+///
+/// \param[in] A    [nsd]x[nsd]
+/// \param[in] size size of matrix
+double det(Matrix<double> &A,
+           const int size){
+  double J = {};
+  switch(size){
+    case 1:
+      J = A(0,0);
+      break;
+    case 2:
+      J = A(0,0)*A(1,1) - A(0,1)*A(1,0);
+      break;
+    case 3:
+      J = A(0,0)*(A(1,1)*A(2,2) - A(1,2)*A(2,1))
+        + A(0,1)*(A(1,2)*A(2,0) - A(1,0)*A(2,2))
+        + A(0,2)*(A(1,0)*A(2,1) - A(1,1)*A(2,0));
+      break;
+	  default:
+       PGFEM_printerr("ERROR: number of spatial dimension %d is not supported.\n", size);
+            print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
+  }
+  return J;	    
+}
+
+/// compute dNdX = dNdkez*inv(dXdkez);
+double PGFem3D_dNdX(const int element_type,
+                    const int nne,
+                    const int nsd,
+                    const double ksi,
+                    const double eta,
+                    const double zet,
+                    Matrix<double> &X,
+                    Matrix<double> &dNdX){
+  // proceed only if 1<= nsd <=3
+  if(nsd < 1 || nsd > 3){
+    PGFEM_printerr("ERROR: number of spatial dimension %d is not supported.\n", nsd);
+    print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
+  }
+
+  // compute dNdkez
+  Matrix<double> dNdkez(nne, nsd, 0.0);
+  compute_dN_dkez(element_type, ksi, eta, zet, dNdkez);
+  
+  
+  Matrix<double> dX(nsd, nsd, 0.0), dX_I(nsd, nsd, 0.0);
+  compute_dX_dkez(nne, nsd, dNdkez, X, dX);
+    
+  // compute Jaccobian Matrix
+  double J = det(dX, nsd);
+  
+  if(J<=0.0){
+    PGFEM_printerr("ERROR: isoparametric J is %e (<=0)\n", J);
+    print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
+  }
+                    
+  if(nsd==1)
+    dX_I(0,0) = 1.0;
+  
+  if(nsd==2){
+    dX_I(0,0) =  dX(1,1);
+    dX_I(0,1) = -dX(0,1);
+    dX_I(1,0) = -dX(1,0);
+    dX_I(1,1) =  dX(0,0);
+  }
+    
+  if(nsd==3){
+    dX_I(0,0) = dX(1,1)*dX(2,2) - dX(1,2)*dX(2,1);
+    dX_I(0,1) = dX(0,2)*dX(2,1) - dX(0,1)*dX(2,2);
+    dX_I(0,2) = dX(0,1)*dX(1,2) - dX(0,2)*dX(1,1);
+    dX_I(1,0) = dX(1,2)*dX(2,0) - dX(1,0)*dX(2,2);
+    dX_I(1,1) = dX(0,0)*dX(2,2) - dX(0,2)*dX(2,0);
+    dX_I(1,2) = dX(0,2)*dX(1,0) - dX(0,0)*dX(1,2);
+    dX_I(2,0) = dX(1,0)*dX(2,1) - dX(1,1)*dX(2,0);
+    dX_I(2,1) = dX(0,1)*dX(2,0) - dX(0,0)*dX(2,1);
+    dX_I(2,2) = dX(0,0)*dX(1,1) - dX(0,1)*dX(1,0);
+  }
+  
+  dNdX.set_values(0.0);
+  for(int ia=0; ia<nne; ++ia){
+    for(int ib=0; ib<nsd; ++ib){
+      for(int ic=0; ic<nsd; ++ic)
+        dNdX(ia, ib) += 1.0/J*dNdkez(ia, ic)*dX_I(ic, ib);
+    }
+  }
+  
+  return J;
+};
+
+/// compute dNdX = dNdkez*inv(dXdkez) for boundary integration
+double PGFem3D_dNdX_Vol2Bnd(const int element_type_vol,
+                            const int element_type_bnd,
+                            const int nne_vol,
+                            const int nne_bnd,
+                            const int nsd,
+                            const double ksi,
+                            const double eta,
+                            const double zet,
+                            Matrix<double> &X_vol,
+                            Matrix<double> &X,
+                            Matrix<double> &dNdX,
+                            const int *kez_map,
+                            const int *Vol2Bnd){
+  // proceed only if 1<= nsd <=3
+  if(nsd < 1 || nsd > 3){
+    PGFEM_printerr("ERROR: number of spatial dimension %d is not supported.\n", nsd);
+    print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
+  }
+
+  double kez_vol[3] = {ksi,eta,zet};
+  double kez_bnd[3] = {};
+  
+  for(int ia=0; ia<nsd; ++ia)
+    kez_bnd[ia] = kez_vol[kez_map[ia]];
+    
+  // compute dNdX
+  Matrix<double> dNdX_vol(nne_vol, nsd, 0.0);
+  PGFem3D_dNdX(element_type_vol, nne_vol, nsd, ksi, eta, zet, X_vol, dNdX_vol);
+  
+  // set Bnd dNdX
+  for(int ia=0; ia<nne_bnd; ++ia)
+    for(int ib=0; ib<nsd; ++ib)
+      dNdX(ia, ib) = dNdX_vol(Vol2Bnd[ia], ib);
+      
+  // compute J
+  Matrix<double> dN_bnd(nne_bnd, nsd, 0.0);
+  compute_dN_dkez(element_type_bnd, kez_bnd[0], kez_bnd[1], kez_bnd[2], dN_bnd);
+  
+  Matrix<double> dX(3, 2, 0.0); // max. nsd == 3 such that nsd-1 = 2
+                                // maximum size (3 x 2 ) of dX is set for reserving 
+                                // the case of nsd == 2 or 1
+  for(int ib=0; ib<nsd; ++ib){
+    for(int ic=0; ic<nsd-1; ++ic){
+      for(int ia=0; ia<nne_bnd; ++ia)
+        dX(ib,ic) += dN_bnd(ia, ic)*X(ia, ib);
+    }
+  }
+  
+  if(nsd<3)
+    dX(3,2) = 1.0;
+    
+  // compute norm(cross(dX(:, 1), dX(:, 2)))  
+  double v0 = dX(1,0)*dX(2,1) - dX(1,1)*dX(2,0);
+  double v1 = dX(0,1)*dX(2,0) - dX(0,0)*dX(2,1);
+  double v2 = dX(0,0)*dX(1,1) - dX(0,1)*dX(1,0);   
+
+  return sqrt(v0*v0 + v1*v1 + v2*v2);      
+};
 
 static const constexpr double one_over_sqrt_3 = 0.57735026918962584; // 1.0/sqrt(3.0);
 
@@ -532,6 +700,7 @@ template <class GP> class QuadratureRuleBoundary : public QuadratureRule{
         kez3D[kez_map_Hex[face_id][0]][ia] = gp.gk[ia];
         kez3D[kez_map_Hex[face_id][1]][ia] = gp.ge[ia];
         kez3D[kez_map_Hex[face_id][2]][ia] = 1.0*kez_map_Hex[face_id][3];
+        weights(ia) = gp.weights[ia];
       }
     }
     
@@ -547,6 +716,7 @@ template <class GP> class QuadratureRuleBoundary : public QuadratureRule{
         kez3D[kez_map_Tet[face_id][1]][ia] = gp.ge[ia];
         if(face_id==2)
           zet(ia) = 1.0 - gp.gk[ia] - gp.ge[ia];
+        weights(ia) = gp.weights[ia];
       }
     }
          
@@ -901,18 +1071,18 @@ FEMLIB::elem_shape_function(long ip, int nne, double *N)
     return;
   }
   
-  double ksi_ = {};
-  double eta_ = {};
-  double zet_ = {};
+  double ksi_ip = {};
+  double eta_ip = {};
+  double zet_ip = {};
   switch(this->nsd){
     case 3: // intended to flow
-      zet_ = this->zet(this->itg_ids(ip, 2));
+      zet_ip = this->zet(this->itg_ids(ip, 2));
     case 2: // intended to flow
-      eta_ = this->eta(this->itg_ids(ip, 1));
+      eta_ip = this->eta(this->itg_ids(ip, 1));
     case 1: 
-      ksi_ = this->ksi(this->itg_ids(ip, 0));
+      ksi_ip = this->ksi(this->itg_ids(ip, 0));
   }
-  PGFem3D_N(this->elem_type, ksi_, eta_, zet_, N);
+  PGFem3D_N(this->elem_type, ksi_ip, eta_ip, zet_ip, N);
 }
 
 double
@@ -948,50 +1118,39 @@ FEMLIB::compute_integration_weight(const int ip){
 void
 FEMLIB::elem_basis_V(long ip)
 {
-  int myrank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-   
-  if(this->curt_elem_id==0 && myrank == 0 && ip == 0)
-  {  
-    FemLibBoundary fes(this, 0, this->intg_order);
-    //std::cout << "Element type " << this->elem_type << " has boundary element " << fes.elem_type << endl;
-    
-    for(int ia=0; ia<fes.nint; ++ia){
-      fes.elem_basis_S(ia);
-      fes.N.print("N");
-    }
-  }
-  
   this->curt_itg_id = ip;
 
-  double ksi_ = {}, eta_ = {}, zet_ = {};
+  double ksi_ip = {}, eta_ip = {}, zet_ip = {};
   switch(this->nsd){
     case 3: // intended to flow
-      zet_ = this->zet(this->itg_ids(ip, 2));
+      zet_ip = this->zet(this->itg_ids(ip, 2));
     case 2: // intended to flow
-      eta_ = this->eta(this->itg_ids(ip, 1));
+      eta_ip = this->eta(this->itg_ids(ip, 1));
     case 1: 
-      ksi_ = this->ksi(this->itg_ids(ip, 0));
+      ksi_ip = this->ksi(this->itg_ids(ip, 0));
   }
-  PGFem3D_N(this->elem_type, ksi_, eta_, zet_, this->N.m_pdata);
+  PGFem3D_N(this->elem_type, ksi_ip, eta_ip, zet_ip, this->N.m_pdata);
   double wt = this->compute_integration_weight(ip);
 
-  this->temp_v.ksi_ip = ksi_;
-  this->temp_v.eta_ip = eta_;
-  this->temp_v.zet_ip = zet_;
+  this->temp_v.ksi_ip = ksi_ip;
+  this->temp_v.eta_ip = eta_ip;
+  this->temp_v.zet_ip = zet_ip;
   this->temp_v.w_ip   = wt;
-
-  this->detJ = deriv(ksi_, eta_, zet_, this->nne,
-                     this->temp_v.x.m_pdata,   this->temp_v.y.m_pdata,   this->temp_v.z.m_pdata,
-                     this->temp_v.N_x.m_pdata, this->temp_v.N_y.m_pdata, this->temp_v.N_z.m_pdata);
+  
+   
+  this->detJ = PGFem3D_dNdX(this->elem_type, 
+                            this->nne, 
+                            this->nsd, ksi_ip, eta_ip, zet_ip, 
+                            this->node_coord, 
+                            this->dN);
 
   this->x_ip.set_values(0.0);
   for(int a = 0; a<this->nne; a++)
   {
-    this->dN(a, 0) = this->temp_v.N_x(a);
-    this->dN(a, 1) = this->temp_v.N_y(a);
-    this->dN(a, 2) = this->temp_v.N_z(a);
-
+    this->temp_v.N_x(a) = this->dN(a, 0);
+    this->temp_v.N_y(a) = this->dN(a, 1);
+    this->temp_v.N_z(a) = this->dN(a, 2);
+    
     this->x_ip(0) += this->N(a)*this->node_coord(a,0);
     this->x_ip(1) += this->N(a)*this->node_coord(a,1);
     this->x_ip(2) += this->N(a)*this->node_coord(a,2);
@@ -1102,7 +1261,7 @@ FemLibBoundary::set_volume_to_boundary_map(void){
 }
 
 void
-FemLibBoundary::initialization(const FEMLIB *fe,
+FemLibBoundary::initialization(FEMLIB *fe,
                                const int face_id,
                                const int i_order)
 {
@@ -1277,20 +1436,45 @@ FemLibBoundary::elem_basis_S(const int ip)
 {
   this->curt_itg_id = ip;
 
-  double ksi_ = {}, eta_ = {}, zet_ = {};
+  double ksi_ip = {}, eta_ip = {}, zet_ip = {};
   switch(this->nsd){
     case 3: // intended to flow
-      zet_ = this->zet(this->itg_ids(ip, 2));
+      zet_ip = this->zet(this->itg_ids(ip, 2));
     case 2: // intended to flow
-      eta_ = this->eta(this->itg_ids(ip, 1));
+      eta_ip = this->eta(this->itg_ids(ip, 1));
     case 1: 
-      ksi_ = this->ksi(this->itg_ids(ip, 0));
+      ksi_ip = this->ksi(this->itg_ids(ip, 0));
   }
-  PGFem3D_N(this->feVol->elem_type, ksi_, eta_, zet_, this->N.m_pdata);
+  
+  PGFem3D_N(this->feVol->elem_type, ksi_ip, eta_ip, zet_ip, this->N.m_pdata);
   double wt = this->compute_integration_weight(ip);
+  
+  compute_dN_dkez(this->feVol->elem_type, ksi_ip, eta_ip, zet_ip, this->dN);
+  Matrix<double> dxyz(this->feVol->nsd, this->feVol->nsd, 0.0);
 
-  this->temp_v.ksi_ip = ksi_;
-  this->temp_v.eta_ip = eta_;
-  this->temp_v.zet_ip = zet_;
-  this->temp_v.w_ip   = wt;
+
+  this->detJ = PGFem3D_dNdX_Vol2Bnd(this->feVol->elem_type, 
+                                    this->elem_type,
+                                    this->feVol->nne,
+                                    this->nne, 
+                                    this->nsd, ksi_ip, eta_ip, zet_ip,
+                                    this->feVol->node_coord,
+                                    this->node_coord,
+                                    this->dN,
+                                    this->kez_map,
+                                    this->Volume2Boundary);
+
+  this->x_ip.set_values(0.0);
+  for(int a = 0; a<this->nne; a++)
+  {
+    this->temp_v.N_x(a) = this->dN(a, 0);
+    this->temp_v.N_y(a) = this->dN(a, 1);
+    this->temp_v.N_z(a) = this->dN(a, 2);
+    
+    this->x_ip(0) += this->N(a)*this->node_coord(a,0);
+    this->x_ip(1) += this->N(a)*this->node_coord(a,1);
+    this->x_ip(2) += this->N(a)*this->node_coord(a,2);
+  }
+  this->detJxW = this->detJ*wt;
+  
 }

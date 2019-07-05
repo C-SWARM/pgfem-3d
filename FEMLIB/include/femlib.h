@@ -95,19 +95,19 @@ class FEMLIB
 
 class FemLibBoundary : public FEMLIB{
 public:
-  const FEMLIB *feVol;
+  FEMLIB *feVol;
   const int *Volume2Boundary;
   const int *kez_map;
   int face_id;
 
   FemLibBoundary(){};
-  FemLibBoundary(const FEMLIB *fe,
+  FemLibBoundary(FEMLIB *fe,
                  const int face_id,
                  const int i_order){
     initialization(fe, face_id, i_order);
   };
 
-  void initialization(const FEMLIB *fe,
+  void initialization(FEMLIB *fe,
                       const int face_id,
                       const int i_order);
 
