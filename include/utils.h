@@ -754,4 +754,22 @@ void compute_root_of_cubic_euqation(double *x,
                                     double d,
                                     double x0 = 0.0,
                                     bool print_cnvg = false);
+
+/// compute sting math expression as a function of time
+double string_function_of_time(const std::string &expr,
+                               double t);
+                               
+/// compute sting math expression as a function of position (x, y, z)
+double string_function_of_xyz(const std::string &expr,
+                              double x,
+                              double y,
+                              double z);
+                              
+/// compute sting math expression as a function of time and position (x, y, z)
+double string_function_of_txyz(const std::string &expr,
+                               double t,
+                               double x,
+                               double y,
+                               double z);
+
 #endif // #define PGFEM3D_UTILS_H

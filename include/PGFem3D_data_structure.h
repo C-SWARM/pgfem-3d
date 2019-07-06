@@ -21,13 +21,58 @@
 #include "pgfem3d/Solver.hpp"
 #include "pgfem3d/Communication.hpp"
 //#include "pgfem3d/MultiscaleCommon.hpp"
+
+#include <sstream>
 #include <vector>
+
+static const constexpr int MAX_BND_ELEMENT_NO = 6; // maximum number of boundary element 
+                                                    // for PGFem3D is 6 (HEXAHEDRAL)
 
 /// Carrying Neumann boundary (NB) conditions for Multiphysics problems
 class NeumannBoundaryElement{
   public:
-    Matrix<int> element_ids; //!< list of elements for NB
-    Matrix<int> features;    //!< geometry features for NB
+    int nbe_no;               //! number of elements for NB
+    int feature_no;           //! number of features for NB
+    Matrix<int> element_ids;  //!< list of elements for NB
+    Matrix<int> features;     //!< geometry features for NB
+    Matrix<std::string> load; //!< NBC value
+    Matrix<int> load_type;    //!< NBC type,    1: for load = t.N
+                              //             nsd : load = [tx, ty, tz] nsd = [1,3]
+    Matrix<Matrix<int>> bnd_elements; //!< list of boundary element for element in element_ids
+    
+    // set all zero
+    NeumannBoundaryElement(){
+      nbe_no     = 0;
+      feature_no = 0;
+    }
+    
+    // set size of feature related objects
+    void set_feature_size(const int feature_no_in,
+                          const int dof){
+      feature_no = feature_no_in;
+      features.initialization(feature_no, 2, 0);
+      load.initialization(feature_no, dof);
+      load_type.initialization(feature_no, 1);
+    }
+    
+    // get T3D feature
+    int bnd_feature(int id){return features(id, 0);}
+
+    // get T3D feature ID
+    int bnd_feature_id(int id){return features(id, 1);}
+
+    // onstruct list of elemnets contributing for NBC
+    void construct_list_of_boundary_elements(Element *elem,
+                                             const int elemno,
+                                             const int nsd);
+    // print feature values
+    void print(void);
+    
+    // read math expression for load values
+    void read_loads(const std::string &in_dir,
+                    const std::string &load_name, 
+                    const int feature_id,
+                    const int load_id);
 };
 
 /// Time stepping struct

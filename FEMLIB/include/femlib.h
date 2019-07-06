@@ -31,18 +31,24 @@ class FEMLIB
   gcm::Matrix<long> node_id;
   gcm::Matrix<double> u0;
 
-  long intg_order;
+  int intg_order;
 
   gcm::Matrix<double> node_coord;
 
   double detJ, detJxW, normal;
   gcm::Matrix<double> x_ip;
-  long elem_type, nint, nne, nsd, curt_elem_id, curt_itg_id;
+    
+  int elem_type, nint, nne, nsd, curt_elem_id, curt_itg_id;
+  int bnd_elem_no;
+  
   TEMP_VARIABLES temp_v;
   double ****ST_tensor;
   double *ST;
 
-  FEMLIB(){};
+  FEMLIB(){
+    ST_tensor = NULL;
+    ST        = NULL;
+  };
   FEMLIB(const int nne,
          const int nsd,
          const int i_order){
@@ -60,9 +66,13 @@ class FEMLIB
 
   ~FEMLIB();
 
-  long determine_integration_type(const int e_type,
+  int determine_integration_type(const int e_type,
                                   const int e_order,
                                   const int i_order);
+
+  int number_of_boundary_elements(const int e_type);
+  int number_of_boundary_elements(const int nne,
+                                  const int nsd);
 
   void initialization(const int nne,
                       const int nsd,

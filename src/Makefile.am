@@ -16,6 +16,7 @@ AM_CPPFLAGS = -Wall \
               -I$(top_srcdir)/FEMLIB/include \
               -I$(top_srcdir)/include \
               -I$(top_srcdir)/lib/VTK_IO/include \
+              -I$(top_srcdir)/lib/fastmathparser/include \
               -I$(top_srcdir)/energy_equation/include \
               -I$(top_builddir)/include \
               $(SUITESPARSE_INCLUDE) \

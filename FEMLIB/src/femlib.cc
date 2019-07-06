@@ -772,11 +772,11 @@ TEMP_VARIABLES::set_variable_size(int nne_t, int nne)
   this->N_z.initialization(nne, 1);
 }
 
-long number_of_integration_points_line(const int order){
+int number_of_integration_points_line(const int order){
   return order + 1;
 }
 
-long number_of_integration_points_tri(const int order){
+int number_of_integration_points_tri(const int order){
   switch(order){
     case 0:
     case 1:
@@ -792,7 +792,7 @@ long number_of_integration_points_tri(const int order){
   return 0;
 }
 
-long number_of_integration_points_quad(const int order){
+int number_of_integration_points_quad(const int order){
   switch(order){
     case 0:
       return 1;
@@ -807,7 +807,7 @@ long number_of_integration_points_quad(const int order){
   return 0;
 }
 
-long number_of_integration_points_tet(const int order){
+int number_of_integration_points_tet(const int order){
   switch(order){
     case 0:
       return 1;
@@ -827,7 +827,7 @@ long number_of_integration_points_tet(const int order){
   return 0;
 }
 
-long number_of_integration_points_hex(const int order){
+int number_of_integration_points_hex(const int order){
   switch(order){
     case 0:
       return 1;
@@ -845,7 +845,37 @@ long number_of_integration_points_hex(const int order){
   return 0;
 }
 
-long
+int 
+FEMLIB::number_of_boundary_elements(const int e_type){
+  switch(e_type){
+    case LINE:
+      return 2;      
+    case TRIANGLE:
+    case QTRIANGLE:      
+      return 3;
+    case QUADRILATERAL:
+      return 4;
+    case TETRAHEDRON:
+    case QTETRAHEDRON:
+      return 4;
+    case HEXAHEDRAL:
+      return 6;
+    case WEDGE:
+      return 5;
+    default:
+      PGFEM_printerr("ERROR: element type %d is not implemented.\n", e_type);
+      print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
+  }
+  return 0;
+}
+
+int 
+FEMLIB::number_of_boundary_elements(const int nne,
+                                    const int nsd){
+  return number_of_boundary_elements(element_type(nne, nsd));
+}
+
+int
 FEMLIB::determine_integration_type(const int e_type,
                                    const int e_order,
                                    const int i_order)
@@ -877,7 +907,8 @@ FEMLIB::initialization(const int nne,
 {
   this->nsd = nsd;
   this->nne = nne;
-  this->elem_type = element_type(nne, nsd);
+  this->elem_type   = element_type(nne, nsd);
+  this->bnd_elem_no = number_of_boundary_elements(this->elem_type);
   
   int e_order = LinearElement;
 
