@@ -210,7 +210,7 @@ void read_Neumann_boundary_conditions(Grid *grid,
         }
       }
       else if (myrank == 0) {
-        PGFEM_printf("No [%s] exists.\n", fn.str());
+        std::cout << "No " << fn.str() << "] exists." << endl;
       }
     }
   }
