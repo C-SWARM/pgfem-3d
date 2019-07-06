@@ -25,6 +25,8 @@
 
 #include <cstring>
 #include <limits>
+#include <sstream>
+#include <fstream>
 
 using namespace pgfem3d;
 using namespace multiscale::net;
@@ -154,6 +156,64 @@ int read_multiphysics_material_properties(MaterialProperty *mat,
   }
 
   return err;
+}
+
+
+/// read Neumann boundary conditions if NBC directory exists.
+/// As NBC is read, NBC object in grid will be created 
+///
+/// \param[in,out] grid   mesh object, NBC member will be updated
+/// \param[in]     mp     multiphysics object
+/// \param[in]     opts   PGFem3D options
+/// \param[in]     myrank current process rank
+void read_Neumann_boundary_conditions(Grid *grid,
+                                      const Multiphysics &mp,
+                                      const PGFem3D_opt *opts,
+                                      const int myrank){
+  std::stringstream ss_nbe_dir;
+  ss_nbe_dir << opts->ipath << "/" << "NBC";
+  if(is_directory_exist(ss_nbe_dir.str().c_str())){
+    if(myrank==0)
+      PGFEM_printf("NBC directory exists, read Neumann boundary conditions from NBC\n");
+
+    for(int ia = 0, e = mp.physicsno; ia < e; ++ia) {
+      std::stringstream fn;
+      fn << ss_nbe_dir.str() << "/" << mp.physicsname[ia] << ".nbc";
+      
+      std::ifstream ifs;
+      ifs.open(fn.str());
+
+      if (ifs.is_open()) {
+        // read number of features and allocate data size
+        ifs >> grid->NBE(ia).feature_no;
+        
+        if(grid->NBE(ia).feature_no > 0){
+          grid->NBE(ia).set_feature_size(grid->NBE(ia).feature_no, mp.ndim[ia]);
+
+          for(int ib=0, nf = grid->NBE(ia).feature_no; ib<nf; ib++){
+            ifs >> grid->NBE(ia).features(ib, 0); // features(ib, 0): T3D feature type
+            ifs >> grid->NBE(ia).features(ib, 1); // features(ib, 1): T3D feature id
+            ifs >> grid->NBE(ia).load_type(ib);   // type is same as number of load values
+
+            for(int ic=0; ic<grid->NBE(ia).load_type(ib); ++ic){
+              std::string load_func_fn; // this is filename of individual load 
+              ifs >> load_func_fn;
+              // math expression in load_func_file is updated and saved in grid->NBE.load
+              grid->NBE(ia).read_loads(ss_nbe_dir.str(), load_func_fn, ib, ic);
+            }
+          }
+          if(myrank == 0)
+            grid->NBE(ia).print();
+          
+          // construct list of elemnets contributing for NBC
+          grid->NBE(ia).construct_list_of_boundary_elements(grid->element, grid->ne, grid->nsd);
+        }
+      }
+      else if (myrank == 0) {
+        std::cout << "No " << fn.str() << "] exists." << endl;
+      }
+    }
+  }
 }
 
 /// count number of ranges that are seperated by comma
@@ -411,6 +471,8 @@ int read_mesh_file(Grid *grid,
   // read multiphysics material properties
   int myrank = com->rank;
   err += read_multiphysics_material_properties(mat, opts, mp, myrank);
+  
+  read_Neumann_boundary_conditions(grid, mp, opts, myrank);
 
   // update numerical solution scheme parameters
   FV[0].NORM = SOL[0].computer_zero;
@@ -1461,3 +1523,4 @@ int read_cohesive_elements(Grid *grid,
   com->net->allreduce(&(grid->nce),&(grid->Gnce),1,NET_DT_LONG,NET_OP_SUM,com->comm);
   return err;
 }
+

@@ -22,6 +22,7 @@
 #include <cmath>
 #include <time.h>
 #include <ttl/ttl.h>
+#include "exprtk.hpp"
 
 using namespace pgfem3d;
 using namespace multiscale::net;
@@ -3410,4 +3411,97 @@ void compute_root_of_cubic_euqation(double *x,
   x[0] = x1;
   x[1] = x2;
   x[2] = x3;
+}
+
+
+/// compute sting math expression as a function of time
+/// using C++ Mathematical Expression Toolkit Library
+///
+/// \param[in] expr string math expression
+/// \param[in] t    argument of string expression
+/// \return computed value of string expression
+double string_function_of_time(const std::string &expr,
+                               double t){
+   typedef exprtk::symbol_table<double> symbol_table_t;
+   typedef exprtk::expression<double>     expression_t;
+   typedef exprtk::parser<double>             parser_t;
+
+   symbol_table_t symbol_table;
+   symbol_table.add_variable("t", t);
+   symbol_table.add_constants();
+
+   expression_t expression;
+   expression.register_symbol_table(symbol_table);
+
+   parser_t parser;
+   parser.compile(expr,expression);
+   
+   return expression.value();
+}
+                               
+/// compute sting math expression as a function of position (x, y, z)
+/// using C++ Mathematical Expression Toolkit Library
+///
+/// \param[in] expr string math expression
+/// \param[in] x    argument of string expression
+/// \param[in] y    argument of string expression
+/// \param[in] x    argument of string expression
+/// \return computed value of string expression
+double string_function_of_xyz(const std::string &expr,
+                              double x,
+                              double y,
+                              double z){
+
+   typedef exprtk::symbol_table<double> symbol_table_t;
+   typedef exprtk::expression<double>     expression_t;
+   typedef exprtk::parser<double>             parser_t;
+
+   symbol_table_t symbol_table;
+   symbol_table.add_variable("x", x);
+   symbol_table.add_variable("y", y);
+   symbol_table.add_variable("z", z);      
+   symbol_table.add_constants();
+
+   expression_t expression;
+   expression.register_symbol_table(symbol_table);
+
+   parser_t parser;
+   parser.compile(expr,expression);
+   
+   return expression.value();
+}
+                              
+/// compute sting math expression as a function of time and position (x, y, z)
+/// using C++ Mathematical Expression Toolkit Library
+///
+/// \param[in] expr string math expression
+/// \param[in] t    argument of string expression (time)
+/// \param[in] x    argument of string expression
+/// \param[in] y    argument of string expression
+/// \param[in] x    argument of string expression
+/// \return computed value of string expression
+double string_function_of_txyz(const std::string &expr,
+                               double t,
+                               double x,
+                               double y,
+                               double z){
+                                
+   typedef exprtk::symbol_table<double> symbol_table_t;
+   typedef exprtk::expression<double>     expression_t;
+   typedef exprtk::parser<double>             parser_t;
+
+   symbol_table_t symbol_table;
+   symbol_table.add_variable("t", t);
+   symbol_table.add_variable("x", x);
+   symbol_table.add_variable("y", y);
+   symbol_table.add_variable("z", z);
+   symbol_table.add_constants();
+
+   expression_t expression;
+   expression.register_symbol_table(symbol_table);
+
+   parser_t parser;
+   parser.compile(expr,expression);
+   
+   return expression.value();
 }

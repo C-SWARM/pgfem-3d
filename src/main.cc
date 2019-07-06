@@ -553,6 +553,7 @@ int single_scale_main(int argc,char *argv[])
 
   Grid grid;
   err += grid_initialization(&grid); // grid.nsd = 3 is the default
+  grid.NBE.initialization(mp.physicsno, 1);
 
   MaterialProperty mat;
   err += material_initialization(&mat);

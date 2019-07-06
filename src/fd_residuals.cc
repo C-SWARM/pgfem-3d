@@ -275,6 +275,62 @@ static int fd_res_elem_MP(double *be,
   return err;
 }
 
+void compute_Neumann_boundary_conditions(FEMLIB *fe,
+                                         int *nbe_elem_id,
+                                         double *be,
+                                         Grid *grid,
+                                         MaterialProperty *mat,
+                                         FieldVariables *fv,
+                                         Solver *sol,
+                                         LoadingSteps *load,
+                                         int mp_id,
+                                         double t,
+                                         double *dts,
+                                         int include_inertia){
+  // check validation of this integration
+  // perform boundary integrations until accumulated number boundary intetations (*nbe_elem_id) reach 
+  // total number of elements for NB
+  if(grid->NBE(mp_id).nbe_no <=0 || *nbe_elem_id>=grid->NBE(mp_id).nbe_no)
+    return;
+    
+  // get element id
+  const int eid = fe->curt_elem_id;
+      
+  if(grid->NBE(mp_id).element_ids(*nbe_elem_id) != eid)
+    return;
+
+  // this_bnd_elem_id used for current integration and
+  // increase *nbe_elem_id for the next check
+  const int this_bnd_elem_id = *nbe_elem_id;
+  ++(*nbe_elem_id);
+  
+  const int nsd = fe->nsd;
+    
+  int myrank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  
+  double P[3] = {};
+  
+  for(int face_id = 0; face_id<fe->bnd_elem_no; ++face_id){
+    
+    if(grid->NBE(mp_id).bnd_elements(this_bnd_elem_id)(face_id) == -1)
+      continue; // NO NBC is applied for boundary element (ia) in elem[eid]      
+    
+    FemLibBoundary fes(fe, face_id, fe->intg_order);    
+
+    // apply auadrature rule 
+    for(int ip=0; ip<fes.nint; ++ip){
+      fes.elem_basis_S(ip);
+      for(int ia = 0; ia<fes.nne; ++ia){
+        for(int ib = 0; ib<nsd; ++ib){
+          int nid = fes.Volume2Boundary[ia];
+          be[nid*nsd+ib] += fes.N(ia)*P[ib]*fes.detJxW;
+        }
+      }
+    }
+  }  
+}
+
 /// Compute residuals
 ///
 /// Compute redidual vector for mechanical problem.
@@ -301,7 +357,7 @@ long fd_residuals_MP(Grid *grid,
                      Solver *sol,
                      LoadingSteps *load,
                      CRPL *crpl,
-             const CommunicationStructure *com,
+                     const CommunicationStructure *com,
                      const PGFem3D_opt *opts,
                      const Multiphysics& mp,
                      int mp_id,

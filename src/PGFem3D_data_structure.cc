@@ -18,6 +18,10 @@
 #include "utils.h"
 #include "vtk_output.h"
 #include <cassert>
+#include "utils.h"
+
+#include <sstream>
+#include <fstream>
 
 using namespace pgfem3d;
 
@@ -678,6 +682,10 @@ int read_multiphysics_settings(Multiphysics& mp,
                                const PGFem3D_opt *opts,
                                int myrank)
 {
+  std::string expr = "sin(t)";
+  
+  std::cout << expr << " t = pi/4 = " << string_function_of_time(expr, M_PI/4.0) << endl;
+
   int err = 0;
   int physicsno = 0;
 
@@ -813,4 +821,112 @@ int read_multiphysics_settings(Multiphysics& mp,
   return err;
 }
 
+/// construct element object in NBE contributing for NBC by features
+///
+/// \param[in] elem   element objct, used to identify boundary elements
+/// \param[in] elemno total number of elements
+/// \param[in] nsd    number of spatial dimensions
+void
+NeumannBoundaryElement::construct_list_of_boundary_elements(Element *elem,
+                                                            const int elemno,
+                                                            const int nsd){
+  this->nbe_no = 0;
+  
+  // count number of element with NBE
+  for(int eid=0; eid<elemno; ++eid){
+    FEMLIB fe;
+    // number of boundary element in element[eid]
+    int bnd_elem_no = fe.number_of_boundary_elements(elem[eid].toe, nsd);
+        
+    // check this element has features for NB
+    bool element_has_bnd_element = false;
+    for(int ia=0; ia<this->feature_no; ++ia){
+      for(int ib = 0; ib<bnd_elem_no; ++ib){
+        if(this->bnd_feature(ia) == elem[eid].bnd_type[ib] &&
+           this->bnd_feature_id(ia) == elem[eid].bnd_id[ib]){
+          element_has_bnd_element = true;
+          break;
+        }
+      }
+      if(element_has_bnd_element){
+        ++(this->nbe_no); 
+        break;
+      }
+    }
+  }
+  
+  // set size of lists 
+  this->element_ids.initialization(this->nbe_no, 2, 0);
+  this->bnd_elements.initialization(this->nbe_no, 1);
+  // re-visit element to set list of NBE
+  int nbe_cnt = 0;
+  for(int eid=0; eid<elemno; ++eid){
+    FEMLIB fe;
+    // number of boundary element in element[eid]
+    int bnd_elem_no = fe.number_of_boundary_elements(elem[eid].toe, nsd);
+    
+    int bnd_elems[MAX_BND_ELEMENT_NO] = {};
+    
+    int cnt_bnd_elem = 0;
+    for(int ia=0; ia<this->feature_no; ++ia){
+      for(int ib = 0; ib<bnd_elem_no; ++ib){
+        if(this->bnd_feature(ia) == elem[eid].bnd_type[ib] &&
+           this->bnd_feature_id(ia) == elem[eid].bnd_id[ib]){
+          bnd_elems[ib] = 1;
+          ++cnt_bnd_elem;
+        }
+      }
+    }
+    if(cnt_bnd_elem>0){ // if this element has NB elements
+                        // set size and feature ids
+      this->element_ids(nbe_cnt, 0) = eid;
+      this->element_ids(nbe_cnt, 1) = cnt_bnd_elem;      
+      this->bnd_elements(nbe_cnt).initialization(cnt_bnd_elem, 1, -1);
+      for(int ia=0, ib=0; ia<bnd_elem_no; ++ia){
+        if(bnd_elems[ia] == 1)
+          this->bnd_elements(nbe_cnt)(ib++, 0) = ia;
+      }
+      ++nbe_cnt; // increase number of boundary elements for next count
+    }
+  }      
+}
 
+
+/// print all feature values
+void 
+NeumannBoundaryElement::print(void){
+  features.print("features", "%d");
+  for(int ia=0, nf = feature_no; ia<nf; ia++){
+    std::cout << "Load type(" << load_type(ia) << "): ";
+    for(int ib=0; ib<load_type(ia); ++ib)
+      std::cout << load(ia, ib) << " ";
+
+    std::cout << endl;
+  }
+}
+
+/// read load (math expression) from in_dir/load_name and save
+/// at NBE.load(feature_id, load_id)
+///
+/// \param[in] in_dir     NBE directory path
+/// \param[in] load_fn    file name of math expression for NBC load
+/// \param[in] feature_id feature id of this load
+/// \param[in] load_id    load id of a feature
+///                       load_id = 0 to 2: for condition (load type = 3) : [tx, ty, tz]
+///                               = 0 only  for condition (load type = 1) : t.N
+void
+NeumannBoundaryElement::read_loads(const std::string &in_dir,
+                                   const std::string &load_fn, 
+                                   const int feature_id,
+                                   const int load_id){
+  std::stringstream fn;
+  fn << in_dir << "/" << load_fn;
+  std::ifstream ifs;
+  ifs.open(fn.str());
+  if(ifs.is_open())
+    std::getline(ifs, load(feature_id, load_id));
+  else{
+    std::cout << "Cannot open [" << fn.str() << "]" << endl;
+    abort();
+  }
+}
