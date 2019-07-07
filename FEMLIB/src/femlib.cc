@@ -16,9 +16,7 @@
 #include "allocation.h"
 #include "cast_macros.h"
 #include "data_structure.h"
-#include "def_grad.h"
 #include "elem3d.h"
-#include "tensors.h"
 #include "utils.h"
 
 // element order
@@ -40,6 +38,35 @@ static const constexpr int element_type(const int nne,
   return dim*10 + nne;
 }
 
+/// compute shape tensors for Grad[del u] or Grad[du]
+///  
+/// \param[in]  nne number of nodes in an element
+/// \param[in]  nsd number of spatial dimensions
+/// \param[in]  dN  deriviative of shape functions
+/// \param[out] ST  computed shape tensor
+void compute_shape_tensor(const int nne,
+                          const int nsd,
+                          Matrix<double> &dN,
+                          double *ST)
+{
+  double d_mg;
+
+  for(int ia=0; ia<nne; ++ia){
+    for(int ib=0; ib<nsd; ++ib){
+      for(int ic=0; ic<nsd; ++ic){
+	      if(ib == ic) 
+	        d_mg = 1.0;  
+	      else 
+	        d_mg = 0.0;
+	      for (int id=0; id<nsd; id++){
+	        // ST(ia, ib, ic, id)
+	        int idx = ia*nsd*nsd*nsd + ib*nsd*nsd + ic*nsd + id;	        
+          ST[idx] = dN(ia, id)*d_mg;
+        }
+      }
+    }
+  }
+}
 
 // define element types
 static const constexpr int          LINE = element_type( 2, FemDim1D);
@@ -54,6 +81,7 @@ static const constexpr int        WEDGE  = element_type( 6, FemDim3D);
 
 // define mapping from volume to boundary elements by face id
 // Volume2Boundary[face_id][nne_BND]
+// Mapping is carried out based on T3D element.
 static const constexpr int Tet2Tri[4][3] = {{0,2,1},{0,1,3},{1,2,3},{0,3,2}};
 static const constexpr int QTet2QTri[4][6] = {{0,2,1,6,5,4},{0,1,3,4,8,7},{1,2,3,5,9,8},{0,3,2,7,9,6}};
 static const constexpr int Hex2Quad[6][4] = {{3,2,1,0},{7,4,5,6},{0,1,5,4},{2,6,5,1},{3,7,6,2},{3,0,4,7}};
@@ -61,10 +89,10 @@ static const constexpr int Hex2Quad[6][4] = {{3,2,1,0},{7,4,5,6},{0,1,5,4},{2,6,
 // define mapping from nsd_Vol-1 integration rules to nsd_Vol for boundary integration in Volume element
 static const constexpr int kez_map_Hex[6][4] = {{1, 0, 2, -1},  // ksi2D(0) -> eta3D(1), eta2D(1) -> ksi3D(0), zet3D(2) = -1
                                                 {0, 1, 2,  1},  // ksi2D(0) -> ksi3D(0), eta2D(1) -> eta3D(1), zet3D(2) =  1
+                                                {0, 2, 1, -1},  // ksi2D(0) -> ksi3D(0), eta2D(1) -> zet3D(2), eta3D(1) = -1
                                                 {1, 2, 0,  1},  // ksi2D(0) -> eta3D(1), eta2D(1) -> zet3D(2), ksi3D(0) =  1
-                                                {2, 0, 1,  1},  // ksi2D(0) -> zet3D(2), eta2D(1) -> ksi3D(0), eta2D(1) =  1
-                                                {2, 1, 0, -1},  // ksi2D(0) -> zet3D(2), eta2D(1) -> eta3D(1), ksi3D(0) = -1
-                                                {0, 2, 1, -1}}; // ksi2D(0) -> ksi3D(0), eta2D(1) -> zet3D(2), eta2D(1) = -1
+                                                {2, 0, 1,  1},  // ksi2D(0) -> zet3D(2), eta2D(1) -> ksi3D(0), eta3D(1) =  1
+                                                {2, 1, 0, -1}}; // ksi2D(0) -> zet3D(2), eta2D(1) -> eta3D(1), ksi3D(0) = -1
 
 static const constexpr int kez_map_Tet[4][4] = {{0,1, 2, 0},  // ksi2D(0) -> ksi3D(0), eta2D(1) -> eta3D(1), zet3D(2) = 0
                                                 {0,2, 1, 0},  // ksi2D(0) -> ksi3D(0), eta2D(1) -> zet3D(2), eta2D(1) = 0
@@ -73,7 +101,9 @@ static const constexpr int kez_map_Tet[4][4] = {{0,1, 2, 0},  // ksi2D(0) -> ksi
                                                   
 /// print errors and abort PGFem3D
 /// 
-/// \param[in]  fname function  
+/// \param[in] fname    function name to print
+/// \param[in] filename file name to print
+/// \param[in] line     line number to print
 void print_func_file_line_and_abort(const char *fname,
                                     const char *filename,
                                     const int line){
@@ -81,6 +111,16 @@ void print_func_file_line_and_abort(const char *fname,
  pgfem3d::PGFEM_Abort();
 }
 
+
+/// compute shape functions 
+/// element by element (element_type) shape functions are defined,
+/// and their values are computed at the quadrature points (ksi, eta, zet).
+///
+/// \param[in]  element_type element type
+/// \param[in]  ksi          ksi coordinate quadrature points
+/// \param[in]  eta          eta coordinate quadrature points
+/// \param[in]  zet          zet coordinate quadrature points
+/// \parma[out] N            computed shape functions
 void PGFem3D_N(const int element_type, 
                const double ksi,
                const double eta,
@@ -162,6 +202,15 @@ void PGFem3D_N(const int element_type,
   }
 }
 
+/// Compute deriviative of shape functions in isoparametric coordinate.
+/// Element by element (element_type) deriviative of shape functions are defined,
+/// and their values are computed at the quadrature points (ksi, eta, zet).
+///
+/// \param[in]  element_type element type
+/// \param[in]  ksi          ksi coordinate quadrature points
+/// \param[in]  eta          eta coordinate quadrature points
+/// \param[in]  zet          zet coordinate quadrature points
+/// \parma[out] dN           computed deriviative shape functions
 void compute_dN_dkez(const int element_type, 
                     const double ksi,
                     const double eta,
@@ -290,6 +339,15 @@ void compute_dN_dkez(const int element_type,
   }
 }
 
+/// Compute deriviative of nodal coordinate w.r.t isoparametric coordinate.
+/// Element by element (element_type) deriviative of shape functions are defined,
+/// and their values are computed at the quadrature points (ksi, eta, zet).
+///
+/// \param[in]  nne    number of nodes in an element
+/// \param[in]  nsd    number of spatial dimensions
+/// \param[in]  dN_kes deriviative of shape functions w.r.t ksi, eta, zet 
+/// \param[in]  X      nodal coordinate
+/// \parma[out] dX     computed deriviative of nodal coordinate
 void compute_dX_dkez(const int nne,
                      const int nsd,
                      Matrix<double> &dN_kez,
@@ -333,6 +391,15 @@ double det(Matrix<double> &A,
 }
 
 /// compute dNdX = dNdkez*inv(dXdkez);
+///
+/// \param[in]  element_type element type
+/// \param[in]  nne          number of nodes in an element
+/// \param[in]  nsd          number of spatial dimensions
+/// \param[in]  ksi          ksi coordinate quadrature points
+/// \param[in]  eta          eta coordinate quadrature points
+/// \param[in]  zet          zet coordinate quadrature points
+/// \param[in]  X            nodal coordinate
+/// \parma[out] dNdX         computed deriviative of shape functions w.r.t X
 double PGFem3D_dNdX(const int element_type,
                     const int nne,
                     const int nsd,
@@ -362,17 +429,20 @@ double PGFem3D_dNdX(const int element_type,
     PGFEM_printerr("ERROR: isoparametric J is %e (<=0)\n", J);
     print_func_file_line_and_abort(__func__,__FILE__,__LINE__);
   }
-                    
+
+  // 1D inv(dX)*det(dX)                    
   if(nsd==1)
     dX_I(0,0) = 1.0;
   
+  // 2D inv(dX)*det(dX)
   if(nsd==2){
     dX_I(0,0) =  dX(1,1);
     dX_I(0,1) = -dX(0,1);
     dX_I(1,0) = -dX(1,0);
     dX_I(1,1) =  dX(0,0);
   }
-    
+
+  // 3D inv(dX)*det(dX)    
   if(nsd==3){
     dX_I(0,0) = dX(1,1)*dX(2,2) - dX(1,2)*dX(2,1);
     dX_I(0,1) = dX(0,2)*dX(2,1) - dX(0,1)*dX(2,2);
@@ -397,6 +467,22 @@ double PGFem3D_dNdX(const int element_type,
 };
 
 /// compute dNdX = dNdkez*inv(dXdkez) for boundary integration
+///
+/// \param[in]  element_type_vol volumetric element type
+/// \param[in]  element_type_bnd boundary element type
+/// \param[in]  nne_vol          volumetric number of nodes in an element
+/// \param[in]  nne_bnd          number of nodes of boundary element 
+/// \param[in]  nsd              number of spatial dimensions
+/// \param[in]  ksi              ksi coordinate quadrature points
+/// \param[in]  eta              eta coordinate quadrature points
+/// \param[in]  zet              zet coordinate quadrature points
+/// \param[in]  X_vol            volumetic nodal coordinate
+/// \param[in]  X_bnd            boundary element nodal coordinate
+/// \parma[out] dNdX             computed deriviative of shape functions w.r.t X
+/// \parma[out] normal           normal vector of boundary element
+/// \param[in]  kez_map          volumetric to boundary map of isoparametric coordinate
+/// \param[in]  Vol2Bnd          Volumetric to boundary map of node IDs
+/// \return determinant of Jaccobian
 double PGFem3D_dNdX_Vol2Bnd(const int element_type_vol,
                             const int element_type_bnd,
                             const int nne_vol,
@@ -406,8 +492,9 @@ double PGFem3D_dNdX_Vol2Bnd(const int element_type_vol,
                             const double eta,
                             const double zet,
                             Matrix<double> &X_vol,
-                            Matrix<double> &X,
+                            Matrix<double> &X_bnd,
                             Matrix<double> &dNdX,
+                            double *normal,
                             const int *kez_map,
                             const int *Vol2Bnd){
   // proceed only if 1<= nsd <=3
@@ -423,13 +510,7 @@ double PGFem3D_dNdX_Vol2Bnd(const int element_type_vol,
     kez_bnd[ia] = kez_vol[kez_map[ia]];
     
   // compute dNdX
-  Matrix<double> dNdX_vol(nne_vol, nsd, 0.0);
-  PGFem3D_dNdX(element_type_vol, nne_vol, nsd, ksi, eta, zet, X_vol, dNdX_vol);
-  
-  // set Bnd dNdX
-  for(int ia=0; ia<nne_bnd; ++ia)
-    for(int ib=0; ib<nsd; ++ib)
-      dNdX(ia, ib) = dNdX_vol(Vol2Bnd[ia], ib);
+  PGFem3D_dNdX(element_type_vol, nne_vol, nsd, ksi, eta, zet, X_vol, dNdX);
       
   // compute J
   Matrix<double> dN_bnd(nne_bnd, nsd, 0.0);
@@ -441,7 +522,7 @@ double PGFem3D_dNdX_Vol2Bnd(const int element_type_vol,
   for(int ib=0; ib<nsd; ++ib){
     for(int ic=0; ic<nsd-1; ++ic){
       for(int ia=0; ia<nne_bnd; ++ia)
-        dX(ib,ic) += dN_bnd(ia, ic)*X(ia, ib);
+        dX(ib,ic) += dN_bnd(ia, ic)*X_bnd(ia, ib);
     }
   }
   
@@ -451,13 +532,19 @@ double PGFem3D_dNdX_Vol2Bnd(const int element_type_vol,
   // compute norm(cross(dX(:, 1), dX(:, 2)))  
   double v0 = dX(1,0)*dX(2,1) - dX(1,1)*dX(2,0);
   double v1 = dX(0,1)*dX(2,0) - dX(0,0)*dX(2,1);
-  double v2 = dX(0,0)*dX(1,1) - dX(0,1)*dX(1,0);   
-
-  return sqrt(v0*v0 + v1*v1 + v2*v2);      
+  double v2 = dX(0,0)*dX(1,1) - dX(0,1)*dX(1,0);
+  
+  double J = sqrt(v0*v0 + v1*v1 + v2*v2);
+  normal[0] = v0/J;
+  normal[1] = v1/J;
+  normal[2] = v2/J;
+  
+  return J;
 };
 
 static const constexpr double one_over_sqrt_3 = 0.57735026918962584; // 1.0/sqrt(3.0);
 
+// Gaussian quadrature points for QUADRILATERAL and HEXAHEDRAL type elements
 typedef struct {
   const double weights[1]  = {2.0};
   const double gk[1] = {0.0};
@@ -482,6 +569,7 @@ typedef struct {
   int gpno = 3;
 } GaussIntegrationPoints3;
 
+// quadrature points for TETRAHEDRON type elements
 typedef struct {
     const double weights[1]  = {1.0/6.0};
     const double gk[1] = {1.0/4.0};
@@ -528,6 +616,7 @@ typedef struct {
     
 } TetIntegrationPoints11;
 
+// quadrature points for TRIANGLE type elements
 typedef struct {
     const double weights[1]  = {0.5};
     const double gk[1] = {1.0/3.0};
@@ -554,6 +643,7 @@ typedef struct {
     
     int gpno = 4;
 } TriIntegrationPoints4;
+
 
 class QuadratureRule{
   public:
@@ -767,9 +857,6 @@ TEMP_VARIABLES::set_variable_size(int nne_t, int nne)
   this->x.initialization(nne_t, 1);
   this->y.initialization(nne_t, 1);
   this->z.initialization(nne_t, 1);
-  this->N_x.initialization(nne, 1);
-  this->N_y.initialization(nne, 1);
-  this->N_z.initialization(nne, 1);
 }
 
 int number_of_integration_points_line(const int order){
@@ -1013,7 +1100,6 @@ FEMLIB::initialization(const int nne,
     }
   }
   
-  this->ST_tensor = (double ****) aloc4(3,3,nsd,nne);
   this->ST = (double *) aloc1(3*3*nsd*nne);
 }
 
@@ -1161,13 +1247,7 @@ FEMLIB::elem_basis_V(long ip)
       ksi_ip = this->ksi(this->itg_ids(ip, 0));
   }
   PGFem3D_N(this->elem_type, ksi_ip, eta_ip, zet_ip, this->N.m_pdata);
-  double wt = this->compute_integration_weight(ip);
-
-  this->temp_v.ksi_ip = ksi_ip;
-  this->temp_v.eta_ip = eta_ip;
-  this->temp_v.zet_ip = zet_ip;
-  this->temp_v.w_ip   = wt;
-  
+  double wt = this->compute_integration_weight(ip);  
    
   this->detJ = PGFem3D_dNdX(this->elem_type, 
                             this->nne, 
@@ -1176,12 +1256,7 @@ FEMLIB::elem_basis_V(long ip)
                             this->dN);
 
   this->x_ip.set_values(0.0);
-  for(int a = 0; a<this->nne; a++)
-  {
-    this->temp_v.N_x(a) = this->dN(a, 0);
-    this->temp_v.N_y(a) = this->dN(a, 1);
-    this->temp_v.N_z(a) = this->dN(a, 2);
-    
+  for(int a = 0; a<this->nne; a++){
     this->x_ip(0) += this->N(a)*this->node_coord(a,0);
     this->x_ip(1) += this->N(a)*this->node_coord(a,1);
     this->x_ip(2) += this->N(a)*this->node_coord(a,2);
@@ -1190,40 +1265,70 @@ FEMLIB::elem_basis_V(long ip)
 }
 
 void
-FEMLIB::update_shape_tensor(void)
-{
-  shape_tensor(this->nne,this->nsd,this->temp_v.N_x.m_pdata,
-               this->temp_v.N_y.m_pdata,
-               this->temp_v.N_z.m_pdata,this->ST_tensor);
-  shapeTensor2array(this->ST,CONST_4(double) this->ST_tensor,this->nne);
+FEMLIB::update_shape_tensor(void){
+  compute_shape_tensor(this->nne,this->nsd, this->dN, this->ST);
 }
+
+
+/// compute deformation gradiant with initial plastic deformation (inv(pF0))
+/// inv(pF0) is used to compute initial deformation due to intial platic deformation
+/// if pF0I is NULL, not initla plastic deformation is applied and skip updating displacements
+/// 
+/// \param[in]  nne  number of nodes in an element
+/// \param[in]  nsd  number of spatial dimensions
+/// \param[in]  u    input displacements
+/// \param[in]  u0   initial displacements due to initial plastic deformation
+/// \param[in]  dN   deriviative of shape functions
+/// \param[in]  pF0I inverse of initial plastic deformation
+/// \param[out] F    computed deformation gradiant
+void compute_deformation_gradient(const int nne,
+                                  const int nsd,
+                                  const double *u,
+                                  Matrix<double> &u0,
+                                  Matrix<double> &dN,                                  
+                                  const double *pF0I,
+                                  double *F){
+  const double *disp = u; // just use pointer for the displacements
+                          // if pF0I is not NULL, pointer of updated displacements
+                          // will be used
+
+  // update displacements due to initial plastic deformation
+  Matrix<double> r_e; // memory will be allocated if pF0I is not NULL 
+
+  if(pF0I!=NULL){
+    r_e.initialization(nne, 1, 0.0);
+    for(int ia=0; ia<nne; ++ia){
+      for(int ib=0; ib<nsd; ++ib)
+        r_e.m_pdata[ia*nsd+ib] = u[ia*nsd+ib] + u0(ia,ib);
+    }
+    disp = r_e.m_pdata;
+  }
+
+  // set F = I
+  F[0] = F[4] = F[8] = 1.0;
+  F[1] = F[2] = F[3] = F[5] = F[6] = F[7] = 0.0;
+
+  // update F(i,j) += dN(ia, j)*disp(ia, i)
+  for(int ia=0; ia<nne; ia++){
+    for(int ib=0; ib<nsd; ++ib){
+      for(int ic=0; ic<nsd; ++ic){
+        F[ib*nsd + ic] += disp[ia*nsd+ib]*dN(ia, ic);
+      }
+    }
+  }  
+}
+                                 
 
 void
 FEMLIB::update_deformation_gradient(const int ndofn, double *u, double *F)
 {
-  double **F_mat;
-  F_mat = aloc2(3,3);
-  def_grad_get(this->nne,ndofn,CONST_4(double) this->ST_tensor,u,F_mat);
-  mat2array(F,CONST_2(double) F_mat,3,3);
-  dealoc2(F_mat,3);
+  compute_deformation_gradient(nne, nsd, u, this->u0, this->dN, NULL, F);
 }
 
 void
-FEMLIB::update_deformation_gradient(const int ndofn, double *u, double *F, double *pF0I)
+FEMLIB::update_deformation_gradient(const int ndofn, const double *u, double *F, double *pF0I)
 {
-  if(pF0I==NULL)
-    this->update_deformation_gradient(ndofn, u, F);
-  else
-  {
-    Matrix<double> r_e(ndofn*this->nne, 1, 0.0);          
-    for(int ia=0; ia<this->nne; ++ia)
-    {
-      r_e.m_pdata[ia*ndofn+0] = u[ia*ndofn+0] + this->u0(ia,0);
-      r_e.m_pdata[ia*ndofn+1] = u[ia*ndofn+1] + this->u0(ia,1);
-      r_e.m_pdata[ia*ndofn+2] = u[ia*ndofn+2] + this->u0(ia,2);
-    }
-    this->update_deformation_gradient(ndofn, r_e.m_pdata, F);
-  }
+  compute_deformation_gradient(nne, nsd, u, this->u0, this->dN, pF0I, F);
 }
 
 double
@@ -1242,8 +1347,6 @@ FEMLIB::elem_volume(void)
 
 FEMLIB::~FEMLIB()
 {
-  if(ST_tensor != NULL)
-    dealoc4(ST_tensor,3,3,nsd);
   if(ST != NULL)
     PGFEM_free(ST);
 }
@@ -1299,9 +1402,10 @@ FemLibBoundary::initialization(FEMLIB *fe,
   this->feVol = fe;
   this->face_id = face_id;
   this->nsd = fe->nsd;
-  this->nne = nne_boundary(fe->elem_type);
+  this->nne = fe->nne;
+  this->nne_bnd = nne_boundary(fe->elem_type);
   this->curt_elem_id = fe->curt_elem_id;
-  this->elem_type = element_type(this->nne, 2);
+  this->elem_type = element_type(this->nne_bnd, 2);
   
   int e_order = LinearElement;
 
@@ -1326,8 +1430,8 @@ FemLibBoundary::initialization(FEMLIB *fe,
   this->zet.initialization(this->nint,1);
   this->weights.initialization(this->nint,1);
   
-  this->N.initialization(this->feVol->nne, 1);
-  this->dN.initialization(this->feVol->nne, this->feVol->nsd);
+  this->N.initialization(this->nne, 1);
+  this->dN.initialization(this->nne, this->nsd);
   this->x_ip.initialization(this->feVol->nsd ,1);
   this->node_coord.initialization(this->nne ,this->nsd);
   this->node_id.initialization(this->nne,1);
@@ -1410,10 +1514,7 @@ FemLibBoundary::initialization(FEMLIB *fe,
       break;
   }
   
-  if(this->nsd == 3){
-    this->ST_tensor = (double ****) aloc4(3,3,nsd,nne);
-    this->ST = (double *) aloc1(3*3*nsd*nne);
-  }
+  this->ST = (double *) aloc1(3*3*this->nsd*this->nne);
 
   this->temp_v.set_variable_size(this->nne, this->nne);
   
@@ -1421,16 +1522,21 @@ FemLibBoundary::initialization(FEMLIB *fe,
   double *y = (this->temp_v).y.m_pdata;
   double *z = (this->temp_v).z.m_pdata;  
 
+  // copy all volumetric nodal values to boundary
   for(int ia=0; ia<this->nne; ++ia){
-    int id_V2B = this->Volume2Boundary[ia];
-    this->node_id(ia) = this->feVol->node_id.m_pdata[id_V2B];
-    x[ia] = fe->temp_v.x.m_pdata[id_V2B];
-    y[ia] = fe->temp_v.y.m_pdata[id_V2B];
-    z[ia] = fe->temp_v.z.m_pdata[id_V2B];        
+    this->node_id(ia) = this->feVol->node_id.m_pdata[ia];
+    x[ia] = fe->temp_v.x.m_pdata[ia];
+    y[ia] = fe->temp_v.y.m_pdata[ia];
+    z[ia] = fe->temp_v.z.m_pdata[ia];        
 
     this->node_coord(ia, 0) = x[ia];
     this->node_coord(ia, 1) = y[ia];
     this->node_coord(ia, 2) = z[ia];
+    if(this->feVol->u0.m_row*this->feVol->u0.m_col > 0){
+      this->u0(ia,0) = this->feVol->u0(ia,0);
+      this->u0(ia,1) = this->feVol->u0(ia,1);
+      this->u0(ia,2) = this->feVol->u0(ia,2);
+    }
   }
 }
 
@@ -1477,35 +1583,31 @@ FemLibBoundary::elem_basis_S(const int ip)
       ksi_ip = this->ksi(this->itg_ids(ip, 0));
   }
   
+  // compute volumetric shape functions
   PGFem3D_N(this->feVol->elem_type, ksi_ip, eta_ip, zet_ip, this->N.m_pdata);
-  double wt = this->compute_integration_weight(ip);
-  
-  compute_dN_dkez(this->feVol->elem_type, ksi_ip, eta_ip, zet_ip, this->dN);
-  Matrix<double> dxyz(this->feVol->nsd, this->feVol->nsd, 0.0);
 
 
+  // compute deriviative of shape functions
+  double wt = this->compute_integration_weight(ip);  
   this->detJ = PGFem3D_dNdX_Vol2Bnd(this->feVol->elem_type, 
                                     this->elem_type,
-                                    this->feVol->nne,
-                                    this->nne, 
+                                    this->nne,
+                                    this->nne_bnd,
                                     this->nsd, ksi_ip, eta_ip, zet_ip,
                                     this->feVol->node_coord,
                                     this->node_coord,
                                     this->dN,
+                                    this->normal,
                                     this->kez_map,
                                     this->Volume2Boundary);
-
+   
   this->x_ip.set_values(0.0);
-  for(int a = 0; a<this->nne; a++)
-  {
-    this->temp_v.N_x(a) = this->dN(a, 0);
-    this->temp_v.N_y(a) = this->dN(a, 1);
-    this->temp_v.N_z(a) = this->dN(a, 2);
-    
-    this->x_ip(0) += this->N(a)*this->node_coord(a,0);
-    this->x_ip(1) += this->N(a)*this->node_coord(a,1);
-    this->x_ip(2) += this->N(a)*this->node_coord(a,2);
-  }
+  for(int ia = 0; ia<this->nne; ia++){
+    this->x_ip(0) += this->N(ia)*this->node_coord(ia,0);
+    this->x_ip(1) += this->N(ia)*this->node_coord(ia,1);
+    this->x_ip(2) += this->N(ia)*this->node_coord(ia,2);
+  }  
+
   this->detJxW = this->detJ*wt;
   
 }

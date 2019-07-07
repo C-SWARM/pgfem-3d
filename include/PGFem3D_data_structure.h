@@ -66,8 +66,11 @@ class NeumannBoundaryElement{
                                              const int elemno,
                                              const int nsd);
     // print feature values
-    void print(void);
+    void print_feature(void);
     
+    // print element values
+    void print_bnd_elements(void);
+        
     // read math expression for load values
     void read_loads(const std::string &in_dir,
                     const std::string &load_name, 

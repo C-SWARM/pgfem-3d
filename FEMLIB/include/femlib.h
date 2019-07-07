@@ -8,8 +8,7 @@
 class TEMP_VARIABLES
 {
  public:
-  gcm::Matrix<double> N_x, N_y, N_z, x, y, z;
-  double ksi_ip, eta_ip, zet_ip, w_ip;
+  gcm::Matrix<double> x, y, z;
   TEMP_VARIABLES(){};
   TEMP_VARIABLES(int nne_t, int nne)
   {
@@ -23,31 +22,31 @@ class FEMLIB
 {
  public:
 
-  gcm::Matrix<double> N;
-  gcm::Matrix<double> dN;
+  gcm::Matrix<double> N;          //! shape function
+  gcm::Matrix<double> dN;         //! dNdX
 
-  gcm::Matrix<double> ksi, eta, zet, weights;
-  gcm::Matrix<int> itg_ids;
-  gcm::Matrix<long> node_id;
-  gcm::Matrix<double> u0;
+  gcm::Matrix<double> ksi, eta, zet, weights; //! isoparametric coordinates and weights
+                                              //! for the quadrature rules
+  gcm::Matrix<int> itg_ids;       //! list of integration IDs of ksi, eta, and zet
+  gcm::Matrix<long> node_id;      //! list of nodes in element under FEM integration
+  gcm::Matrix<double> u0;         //! nodal variable values
 
-  int intg_order;
+  int intg_order;                 //! order of FEM integration
 
-  gcm::Matrix<double> node_coord;
+  gcm::Matrix<double> node_coord; //! nodal coordinates, [node id, xyz id = 0,1,2]
 
-  double detJ, detJxW, normal;
-  gcm::Matrix<double> x_ip;
+  double detJ;                    //! determinant of Jaccobian, det(J)
+  double detJxW;                  //! det(J)*Weight(ip)
+  gcm::Matrix<double> x_ip;       //! coordiate at integration points
     
   int elem_type, nint, nne, nsd, curt_elem_id, curt_itg_id;
   int bnd_elem_no;
   
   TEMP_VARIABLES temp_v;
-  double ****ST_tensor;
   double *ST;
 
   FEMLIB(){
-    ST_tensor = NULL;
-    ST        = NULL;
+    ST = NULL;
   };
   FEMLIB(const int nne,
          const int nsd,
@@ -94,21 +93,25 @@ class FEMLIB
   void elem_basis_V(long ip);
   void update_shape_tensor(void);
   void update_deformation_gradient(const int ndofn,
-                                   double *u,
-                                   double *F);
+                                           double *u,
+                                           double *F);
   void update_deformation_gradient(const int ndofn, 
-                                   double *u, 
+                                   const double *u, 
                                    double *F,
-                                   double *pF0I);                                   
+                                   double *pF0I);
+
   double elem_volume(void);
 };
 
 class FemLibBoundary : public FEMLIB{
 public:
-  FEMLIB *feVol;
-  const int *Volume2Boundary;
-  const int *kez_map;
-  int face_id;
+  FEMLIB *feVol;                  //! Volumetric FEMLIB
+  const int *Volume2Boundary;     //! Volumetric to boundary map of node IDs
+  const int *kez_map;             //! Volumetric to boundary map of
+                                  //! isoparametric coordinates
+  int face_id;                    //! face id of element
+  double normal[3];               //! normal vector
+  int nne_bnd;                    //! number of nodes of boundary element
 
   FemLibBoundary(){};
   FemLibBoundary(FEMLIB *fe,
@@ -122,7 +125,7 @@ public:
                       const int i_order);
 
   void set_volume_to_boundary_map(void);
-  double compute_integration_weight(const int ip);  
+  double compute_integration_weight(const int ip);
   void elem_basis_S(const int ip);
 };
 

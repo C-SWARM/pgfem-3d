@@ -108,19 +108,98 @@ static int fd_res_coel(double *fe,
   return err;
 }
 
+void compute_Neumann_boundary_conditions(FEMLIB *fe,
+                                         int *nbe_elem_id,
+                                         double *be,
+                                         const double *r_e,
+                                         Grid *grid,
+                                         FieldVariables *fv,
+                                         int mp_id,
+                                         double t,
+                                         double *dts,
+                                         int include_inertia){
+  // no NBE available
+  if(grid->NBE.m_row*grid->NBE.m_col == 0)
+    return;
+    
+  // check validation of this integration
+  // perform boundary integrations until accumulated number boundary intetations (*nbe_elem_id) reach 
+  // total number of elements for NB
+  if(grid->NBE(mp_id).nbe_no <=0 || *nbe_elem_id>=grid->NBE(mp_id).nbe_no)
+    return;
+    
+  // get element id
+  const int eid = fe->curt_elem_id;
+      
+  if(grid->NBE(mp_id).element_ids(*nbe_elem_id, 0) != eid)
+    return;
+    
+  // this_bnd_elem_id used for current integration and
+  // increase *nbe_elem_id for the next check
+  const int this_bnd_elem_id = *nbe_elem_id;
+  ++(*nbe_elem_id);
+  
+  // number of boundary element to be integrated
+  const int bnd_elem_no = grid->NBE(mp_id).element_ids(this_bnd_elem_id, 1);
+
+  // number of spatial dimensions  
+  const int nsd   = fe->nsd;
+  const int ndofn = fv->ndofn;
+    
+  int myrank = 0;
+  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+
+  Constitutive_model *m = fv->eps[eid].model;
+
+  for(int iA = 0; iA<bnd_elem_no; ++iA){
+    const int face_id    = grid->NBE(mp_id).bnd_elements(this_bnd_elem_id)(iA, 0);
+    const int feature_id = grid->NBE(mp_id).bnd_elements(this_bnd_elem_id)(iA, 1);
+    const int load_type  = grid->NBE(mp_id).load_type(feature_id); // same as number of boundary loads
+
+    double P[3] = {};
+    for(int ia=0; ia<load_type; ++ia){
+      P[ia] = string_function_of_time(grid->NBE(mp_id).load(feature_id, ia), t);
+      P[ia] = 0.0;
+    }
+    
+    // start boundary element FEM integration for
+    FemLibBoundary fes(fe, face_id, fe->intg_order);    
+
+    // apply quadrature rule 
+    for(int ip=0; ip<fes.nint; ++ip){      
+      fes.elem_basis_S(ip);
+      fes.update_shape_tensor();
+      
+      Matrix<double> F(3,3, 0.0);
+      fes.update_deformation_gradient(ndofn, r_e, F.m_pdata, (m->param)->pFI); 
+
+      for(int ia = 0; ia<fes.nne; ++ia){
+        for(int ib = 0; ib<nsd; ++ib){
+          int nid = fes.Volume2Boundary[ia];
+          be[nid*nsd+ib] += fes.N(ia)*P[ib]*fes.detJxW;
+        }
+      }
+    }
+  }  
+}
+
 /// Compute residuals on a single element
 ///
-/// \param[in] grid a mesh object
-/// \param[in] mat a material object
-/// \param[in,out] variables object for field variables
-/// \param[in] sol object for solution scheme
-/// \param[in] load object for loading
-/// \param[in] crpl object for lagcy crystal plasticity
-/// \param[in] com communicatio structure
-/// \param[in] opts structure PGFem3D option
-/// \param[in] mp_id mutiphysics id
-/// \param[in] t time
-/// \param[in] dts time step sizes a n, and n+1
+/// \param[out]    be              computed element residual
+/// \param[in]     eid             element id
+/// \param[in]     grid            a mesh object
+/// \param[in]     mat             a material object
+/// \param[in,out] fv              variables object for field variables
+/// \param[in]     sol             object for solution scheme
+/// \param[in]     load            object for loading
+/// \param[in]     crpl            object for lagcy crystal plasticity
+/// \param[in]     com             communicatio structure
+/// \param[in]     opts            structure PGFem3D option
+/// \param[in]     mp_id           mutiphysics id
+/// \param[in]     t               time
+/// \param[in]     dts             time step sizes a n, and n+1
+/// \param[in]     cnt_bnd_element number of integrated boundary element
+///                                used as boundary element id
 /// \return non-zero on internal error
 static int fd_res_elem_MP(double *be,
                           const int eid,
@@ -137,7 +216,8 @@ static int fd_res_elem_MP(double *be,
                           double t,
                           double *dts,
                           int include_inertia,
-                          int updated_deformation)
+                          int updated_deformation,
+                          int *cnt_bnd_element)
 {
   int err = 0;
   int intg_order = 0;
@@ -268,67 +348,16 @@ static int fd_res_elem_MP(double *be,
       break;
     }
   }
+  
+  // perform 
+  
+  compute_Neumann_boundary_conditions(&fe, cnt_bnd_element, be, r_e,
+                                      grid, fv, mp_id, t, dts, include_inertia);
 
   dealoc1 (r_e);
   dealoc1l (cn);
 
   return err;
-}
-
-void compute_Neumann_boundary_conditions(FEMLIB *fe,
-                                         int *nbe_elem_id,
-                                         double *be,
-                                         Grid *grid,
-                                         MaterialProperty *mat,
-                                         FieldVariables *fv,
-                                         Solver *sol,
-                                         LoadingSteps *load,
-                                         int mp_id,
-                                         double t,
-                                         double *dts,
-                                         int include_inertia){
-  // check validation of this integration
-  // perform boundary integrations until accumulated number boundary intetations (*nbe_elem_id) reach 
-  // total number of elements for NB
-  if(grid->NBE(mp_id).nbe_no <=0 || *nbe_elem_id>=grid->NBE(mp_id).nbe_no)
-    return;
-    
-  // get element id
-  const int eid = fe->curt_elem_id;
-      
-  if(grid->NBE(mp_id).element_ids(*nbe_elem_id) != eid)
-    return;
-
-  // this_bnd_elem_id used for current integration and
-  // increase *nbe_elem_id for the next check
-  const int this_bnd_elem_id = *nbe_elem_id;
-  ++(*nbe_elem_id);
-  
-  const int nsd = fe->nsd;
-    
-  int myrank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
-  
-  double P[3] = {};
-  
-  for(int face_id = 0; face_id<fe->bnd_elem_no; ++face_id){
-    
-    if(grid->NBE(mp_id).bnd_elements(this_bnd_elem_id)(face_id) == -1)
-      continue; // NO NBC is applied for boundary element (ia) in elem[eid]      
-    
-    FemLibBoundary fes(fe, face_id, fe->intg_order);    
-
-    // apply auadrature rule 
-    for(int ip=0; ip<fes.nint; ++ip){
-      fes.elem_basis_S(ip);
-      for(int ia = 0; ia<fes.nne; ++ia){
-        for(int ib = 0; ib<nsd; ++ib){
-          int nid = fes.Volume2Boundary[ia];
-          be[nid*nsd+ib] += fes.N(ia)*P[ib]*fes.detJxW;
-        }
-      }
-    }
-  }  
 }
 
 /// Compute residuals
@@ -387,6 +416,8 @@ long fd_residuals_MP(Grid *grid,
   /* decision end*/
 
   int myrank = com->rank;
+  int cnt_bnd_element = 0; // count integration of 
+                           // boundary element
 
   for (int i=0;i<grid->ne;i++) {
     const int nne = elem[i].toe;
@@ -396,9 +427,11 @@ long fd_residuals_MP(Grid *grid,
     const int ndofe = get_ndof_on_elem_nodes(nne,nod,grid->node,fv->ndofn);
     double *fe = aloc1 (ndofe);
 
+    // cnt_bnd_element is added if the element integration loop includes
+    // boundary element integration
     err += fd_res_elem_MP(fe, i, grid, mat, fv, sol, load, crpl,
                           com, opts, mp, mp_id, t, dts,
-                          include_inertia, updated_deformation);
+                          include_inertia, updated_deformation, &cnt_bnd_element);
 
     fd_res_assemble(fv->f_u, fe, grid->node, nne, fv->ndofn, nod, mp_id);
 
@@ -562,6 +595,8 @@ int fd_res_compute_reactions_MP(Grid *grid,
   const int n_rxn = sup->npd + 1;
   double *rxn = PGFEM_calloc(double, n_rxn);
   double *RXN = PGFEM_calloc(double, n_rxn);
+  int cnt_bnd_element = 0; // count integration of 
+                           // boundary element
   for(int i = 0; i < ne; i++)
   {
     const int nne = elem[el_id[i]].toe;
@@ -572,7 +607,7 @@ int fd_res_compute_reactions_MP(Grid *grid,
 
     err += fd_res_elem_MP(fe, el_id[i], grid, mat, fv, sol, load, crpl,
                           com, opts, mp, mp_id, t, dts,
-                          include_inertia, updated_deformation);
+                          include_inertia, updated_deformation, &cnt_bnd_element);
 
     // Previous may have called integration algorithm. Need to reset
     // state variables to retain consistent tangent and to ensure we

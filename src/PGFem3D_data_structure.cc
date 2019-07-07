@@ -18,7 +18,6 @@
 #include "utils.h"
 #include "vtk_output.h"
 #include <cassert>
-#include "utils.h"
 
 #include <sstream>
 #include <fstream>
@@ -682,10 +681,6 @@ int read_multiphysics_settings(Multiphysics& mp,
                                const PGFem3D_opt *opts,
                                int myrank)
 {
-  std::string expr = "sin(t)";
-  
-  std::cout << expr << " t = pi/4 = " << string_function_of_time(expr, M_PI/4.0) << endl;
-
   int err = 0;
   int physicsno = 0;
 
@@ -729,7 +724,7 @@ int read_multiphysics_settings(Multiphysics& mp,
         if(n_couple<0)
           n_couple = 0;
 
-	mp.coupled_ids[ia].resize(n_couple + 1);
+        mp.coupled_ids[ia].resize(n_couple + 1);
         mp.coupled_ids[ia][0] = n_couple;
         for(int ib = 0; ib<n_couple; ib++)
           CHECK_SCANF(in, "%d", &(mp.coupled_ids[ia][ib+1]));
@@ -742,11 +737,11 @@ int read_multiphysics_settings(Multiphysics& mp,
         if(mp.write_no[ia]>0)
         {
           // read from file for writing results
-	  mp.write_ids[ia].resize(mp.write_no[ia]);
+          mp.write_ids[ia].resize(mp.write_no[ia]);
           err += scan_for_valid_line(in);
           cnt_pmr += mp.write_no[ia];
           for(int ib=0; ib<mp.write_no[ia]; ib++)
-	    CHECK_SCANF(in, "%d", &(mp.write_ids[ia][ib]));
+          CHECK_SCANF(in, "%d", &(mp.write_ids[ia][ib]));
         }
         if(mp.write_no[ia]==-1)
         {
@@ -766,7 +761,7 @@ int read_multiphysics_settings(Multiphysics& mp,
           }
 
           // set default : all outputs
-	  mp.write_ids[ia].resize(mp.write_no[ia]);
+          mp.write_ids[ia].resize(mp.write_no[ia]);
           err += scan_for_valid_line(in);
           cnt_pmr += mp.write_no[ia];
           for(int ib=0; ib<mp.write_no[ia]; ib++)
@@ -866,13 +861,15 @@ NeumannBoundaryElement::construct_list_of_boundary_elements(Element *elem,
     int bnd_elem_no = fe.number_of_boundary_elements(elem[eid].toe, nsd);
     
     int bnd_elems[MAX_BND_ELEMENT_NO] = {};
+    int feature_idx[MAX_BND_ELEMENT_NO] = {};
     
     int cnt_bnd_elem = 0;
     for(int ia=0; ia<this->feature_no; ++ia){
       for(int ib = 0; ib<bnd_elem_no; ++ib){
         if(this->bnd_feature(ia) == elem[eid].bnd_type[ib] &&
            this->bnd_feature_id(ia) == elem[eid].bnd_id[ib]){
-          bnd_elems[ib] = 1;
+          bnd_elems[ib]   = 1;
+          feature_idx[ib] = ia;
           ++cnt_bnd_elem;
         }
       }
@@ -881,10 +878,12 @@ NeumannBoundaryElement::construct_list_of_boundary_elements(Element *elem,
                         // set size and feature ids
       this->element_ids(nbe_cnt, 0) = eid;
       this->element_ids(nbe_cnt, 1) = cnt_bnd_elem;      
-      this->bnd_elements(nbe_cnt).initialization(cnt_bnd_elem, 1, -1);
+      this->bnd_elements(nbe_cnt).initialization(cnt_bnd_elem, 2, 0);
       for(int ia=0, ib=0; ia<bnd_elem_no; ++ia){
-        if(bnd_elems[ia] == 1)
-          this->bnd_elements(nbe_cnt)(ib++, 0) = ia;
+        if(bnd_elems[ia] == 1){
+          this->bnd_elements(nbe_cnt)(ib,   0) = ia;
+          this->bnd_elements(nbe_cnt)(ib++, 1) = feature_idx[ia];
+        }
       }
       ++nbe_cnt; // increase number of boundary elements for next count
     }
@@ -894,7 +893,7 @@ NeumannBoundaryElement::construct_list_of_boundary_elements(Element *elem,
 
 /// print all feature values
 void 
-NeumannBoundaryElement::print(void){
+NeumannBoundaryElement::print_feature(void){
   features.print("features", "%d");
   for(int ia=0, nf = feature_no; ia<nf; ia++){
     std::cout << "Load type(" << load_type(ia) << "): ";
@@ -902,6 +901,19 @@ NeumannBoundaryElement::print(void){
       std::cout << load(ia, ib) << " ";
 
     std::cout << endl;
+  }
+}
+
+/// print all boundary elements values
+void 
+NeumannBoundaryElement::print_bnd_elements(void){
+  for(int ia=0; ia<nbe_no; ++ia){
+    for(int ib=0; ib<element_ids(ia, 1); ++ib){
+      std::cout << "eid : " << element_ids(ia, 0);
+      std::cout << " face no : " << element_ids(ia, 1);
+      std::cout << " face id : " << bnd_elements(ia)(ib, 0);
+      std::cout << " load id : " << bnd_elements(ia)(ib, 1) << endl;
+    }
   }
 }
 

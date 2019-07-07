@@ -203,10 +203,13 @@ void read_Neumann_boundary_conditions(Grid *grid,
             }
           }
           if(myrank == 0)
-            grid->NBE(ia).print();
+            grid->NBE(ia).print_feature();
           
           // construct list of elemnets contributing for NBC
           grid->NBE(ia).construct_list_of_boundary_elements(grid->element, grid->ne, grid->nsd);
+          if(myrank==0)
+            grid->NBE(ia).print_bnd_elements();
+
         }
       }
       else if (myrank == 0) {
