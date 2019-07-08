@@ -16,6 +16,7 @@
 #include "local2global_id_mapping.h"
 #include "elem3d.h"
 #include "gen_path.h"
+#include <sstream>
 
 using namespace pgfem3d;
 using namespace pgfem3d::net;
@@ -82,16 +83,14 @@ class GlobalCOValues{
                                  const char *co_in,
                                  const int myrank){
       // set CO file name for the decomposition_myrank
-      // need enough space for a filename, a 32 signed ascii integer, and the
-      // "_.in" characters
-      char fn[FILE_NAME_SIZE + 4 + 11];
-      sprintf(fn, "%*s_%d.in", FILE_NAME_SIZE, co_in, myrank);
+      std::stringstream fn;
+      fn << co_in << "_" << myrank << ".in";
 
       // try to open the CO file
-      FILE *fp = fopen(fn, "r");
+      FILE *fp = fopen(fn.str().c_str(), "r");
       if(fp==NULL)
       {
-        std::cout << "fail to read [" << fn << "]" << endl;
+        std::cout << "fail to read [" << fn.str() << "]" << endl;
         abort();
       }
 
@@ -168,18 +167,15 @@ class GlobalCOValues{
     /// \param[in] co_out    CO_path_out/co_filebase
     /// \param[in] myrank   partion ID (current process rank)
     void write_a_orientation_file(Locals2Global &L2G_to,
-                                  const char *co_out,
+                                  const std::string &co_out,
                                   const int myrank){
+      std::stringstream fn;
+      fn << co_out << "_" << myrank << ".in";
 
-      // need enough space for a long filename, a 32 signed ascii integer, and
-      // the "_.in\0" characters
-      char fn[2 * FILE_NAME_SIZE + 2 + 4 + 12];
-      sprintf(fn, "%*s_%d.in", 2 * FILE_NAME_SIZE + 2, co_out, myrank);
-
-      FILE *fp = fopen(fn, "w");
+      FILE *fp = fopen(fn.str().c_str(), "w");
       if(fp==NULL)
       {
-        std::cout << "fail to create [" << fn << "]" << endl;
+        std::cout << "fail to create [" << fn.str() << "]" << endl;
         abort();
       }
 
@@ -228,11 +224,11 @@ class GlobalCOValues{
     }
 
     // need enough space for two filenames and the '/ and \0'
-    char co_out[2 * FILE_NAME_SIZE + 2];
-    sprintf(co_out, "%*s/%*s", FILE_NAME_SIZE, co_out_dir, FILE_NAME_SIZE, co_out_fb);
+    std::stringstream co_out;
+    co_out << co_out_dir << "/" << co_out_fb;
 
     for(int ia=0; ia<L2G_to.np; ++ia)
-      write_a_orientation_file(L2G_to, co_out, ia);
+      write_a_orientation_file(L2G_to, co_out.str(), ia);
     }
 
 };
