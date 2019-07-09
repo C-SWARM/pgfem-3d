@@ -58,4 +58,9 @@ void post_processing_max_pressure(const Grid &grid,
                                   const pgfem3d::CommunicationStructure *com,
                                   const FieldVariables &fv);
 
+/// compute surface area of face on which 
+/// Neumann boundary (NB) conditions are applied
+void post_processing_compute_NBE_area(Grid &grid,
+                                      const pgfem3d::CommunicationStructure *com);
+
 #endif // #define PGFEM3D_POST_PROCESSING_H

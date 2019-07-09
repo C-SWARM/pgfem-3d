@@ -728,7 +728,7 @@ double area (long nne,
 
 void Logarithmic_strain (double **F,
                          double **EL);
-void mid_point_rule(double *v, double *w, double *x, double alpha, long n_row);
+void mid_point_rule(double *v, const double *w, const double *x, const double alpha, const long n_row);
 
 /// determine whether the element is on communication boundary or in interior
 ///

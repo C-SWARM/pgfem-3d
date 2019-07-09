@@ -31,6 +31,7 @@
 #include <cassert>
 #include <cmath>
 #include <cstring>
+#include <ttl/ttl.h>
 
 using namespace multiscale::net;
 
@@ -41,6 +42,17 @@ using pgfem3d::MultiscaleCommon;
 using pgfem3d::MULTISCALE_SOLUTION;
 }
 
+
+template <int R, class S = double>
+using Tensor = ttl::Tensor<R, 3, S>;
+
+template <int R, class S = double *>
+using TensorA = ttl::Tensor<R, 3, S>;
+  
+static constexpr ttl::Index<'i'> i;
+static constexpr ttl::Index<'j'> j;
+
+  
 /* assemble the element residual to the local portion of the global
    residual vector */
 static void fd_res_assemble(double *f_u,
@@ -109,7 +121,6 @@ static int fd_res_coel(double *fe,
 }
 
 void compute_Neumann_boundary_conditions(FEMLIB *fe,
-                                         int *nbe_elem_id,
                                          double *be,
                                          const double *r_e,
                                          Grid *grid,
@@ -117,37 +128,48 @@ void compute_Neumann_boundary_conditions(FEMLIB *fe,
                                          int mp_id,
                                          double t,
                                          double *dts,
-                                         int include_inertia){
+                                         const int include_inertia,
+                                         const double alpha){
+  return;
   // no NBE available
   if(grid->NBE.m_row*grid->NBE.m_col == 0)
     return;
-    
-  // check validation of this integration
-  // perform boundary integrations until accumulated number boundary intetations (*nbe_elem_id) reach 
-  // total number of elements for NB
-  if(grid->NBE(mp_id).nbe_no <=0 || *nbe_elem_id>=grid->NBE(mp_id).nbe_no)
-    return;
-    
-  // get element id
-  const int eid = fe->curt_elem_id;
-      
-  if(grid->NBE(mp_id).element_ids(*nbe_elem_id, 0) != eid)
-    return;
-    
-  // this_bnd_elem_id used for current integration and
-  // increase *nbe_elem_id for the next check
-  const int this_bnd_elem_id = *nbe_elem_id;
-  ++(*nbe_elem_id);
   
+  // check validation of this integration  
+  const int eid = fe->curt_elem_id;
+  if(grid->NBE(mp_id).element_check(eid, 0)==0)
+    return;
+  
+  int this_bnd_elem_id = grid->NBE(mp_id).element_check(eid, 1);
+    
   // number of boundary element to be integrated
   const int bnd_elem_no = grid->NBE(mp_id).element_ids(this_bnd_elem_id, 1);
 
   // number of spatial dimensions  
   const int nsd   = fe->nsd;
   const int ndofn = fv->ndofn;
+  
+  // mid point rule
+  double dt_1_minus_alpha =  1.0;
+  double dt_alpha         =  0.0;
     
-  int myrank = 0;
-  MPI_Comm_rank(MPI_COMM_WORLD, &myrank);
+  // displacement at t[n] and t[n-1]
+  Matrix<double> Un, Unm1;  
+  
+  if(include_inertia){ 
+    dt_1_minus_alpha = dts[DT_NP1]*(1.0-alpha);
+    dt_alpha = dts[DT_N]*alpha;    
+    
+      Un.initialization(fe->nne*nsd, 1, 0.0);
+    Unm1.initialization(fe->nne*nsd, 1, 0.0);
+    
+    for(int ia=0; ia<fe->nne; ++ia){
+      for(int ib=0; ib<nsd; ++ia){
+        Un(  ia*nsd+ib) = fv->u_n[  fe->node_id(ia)*ndofn+ib];
+        Unm1(ia*nsd+ib) = fv->u_nm1[fe->node_id(ia)*ndofn+ib];
+      }
+    }
+  }
 
   Constitutive_model *m = fv->eps[eid].model;
 
@@ -156,12 +178,30 @@ void compute_Neumann_boundary_conditions(FEMLIB *fe,
     const int feature_id = grid->NBE(mp_id).bnd_elements(this_bnd_elem_id)(iA, 1);
     const int load_type  = grid->NBE(mp_id).load_type(feature_id); // same as number of boundary loads
 
-    double P[3] = {};
+    double Pnp1[3] = {}, Pn[3] = {}, Pnm1[3] = {};
+
+    // compute pressure at t_np1
     for(int ia=0; ia<load_type; ++ia){
-      P[ia] = string_function_of_time(grid->NBE(mp_id).load(feature_id, ia), t);
-      P[ia] = 0.0;
+      Pnp1[ia] = grid->NBE(mp_id).load_values_np1(feature_id, ia);
+    }
+        
+    // compute pressure at t[n] and t[n-1] if transient
+
+    if(include_inertia){                
+      for(int ia=0; ia<load_type; ++ia){
+        Pn[  ia] = grid->NBE(mp_id).load_values_n(  feature_id, ia);
+        Pnm1[ia] = grid->NBE(mp_id).load_values_nm1(feature_id, ia);
+      }
     }
     
+    if(load_type == 1){ // pressure bounary condition
+      for(int ia=2; ia<nsd; ++ia){
+        Pnp1[ia] = Pnp1[0];
+        Pn[  ia] = Pn[  0];
+        Pnm1[ia] = Pnm1[0];        
+      }
+    }    
+
     // start boundary element FEM integration for
     FemLibBoundary fes(fe, face_id, fe->intg_order);    
 
@@ -170,14 +210,64 @@ void compute_Neumann_boundary_conditions(FEMLIB *fe,
       fes.elem_basis_S(ip);
       fes.update_shape_tensor();
       
-      Matrix<double> F(3,3, 0.0);
-      fes.update_deformation_gradient(ndofn, r_e, F.m_pdata, (m->param)->pFI); 
+      // compute pressure terms at t(n+1), t(n), and t(n-1)
+      double PNnp1[3], PNn[3], PNnm1[3];      
+      if(load_type == 1){ // pressure boundary condition
+        TensorA<1> N(fes.normal);
+        for(int ia=0; ia<nsd; ++ia){
+          PNnp1[ia] = Pnp1[ia]*fes.normal[ia];
+          PNn[  ia] = Pn[  ia]*fes.normal[ia];
+          PNnm1[ia] = Pnm1[ia]*fes.normal[ia];
+        }
+      } else{             // traction boundary condition
+        for(int ia=0; ia<nsd; ++ia){
+          PNnp1[ia] = Pnp1[ia];
+          PNn[  ia] = Pn[  ia];
+          PNnm1[ia] = Pnm1[ia];
+        }
+      }
+      
+      // compute deformation gradient * pressure at t(n+a) and t(n-1-a)
+      Tensor<1> FITNnpa = {}, FITNnma = {};
+      double Jnpa = {}, Jnma = {};
+      
+      if(include_inertia){
+        Tensor<1> PNnpa = {}, PNnma = {};
+        mid_point_rule(PNnpa.data, PNn,   Pnp1, alpha, nsd);
+        mid_point_rule(PNnma.data, PNnm1, Pn,   alpha, nsd);
+        Matrix<double> Unpa(fe->nne*nsd, 1, 0.0), Unma(fe->nne*nsd, 1, 0.0);
+        mid_point_rule(Unpa.m_pdata,   Un.m_pdata, r_e,        alpha, fe->nne*nsd);
+        mid_point_rule(Unma.m_pdata, Unm1.m_pdata, Un.m_pdata, alpha, fe->nne*nsd);
+        Tensor<2> Fnpa = {}, Fnma = {}, FnpaI = {}, FnmaI = {};
+        fes.update_deformation_gradient(nsd, Unpa.m_pdata, Fnpa.data, (m->param)->pFI);
+        fes.update_deformation_gradient(nsd, Unma.m_pdata, Fnma.data, (m->param)->pFI);
 
-      for(int ia = 0; ia<fes.nne; ++ia){
+        Jnpa = ttl::det(Fnpa);
+        FnpaI = ttl::inverse(Fnpa);
+        Jnma = ttl::det(Fnpa);
+        FnmaI = ttl::inverse(Fnma);
+        FITNnpa = FnpaI(j, i)*PNnpa(j);
+        FITNnma = FnmaI(j, i)*PNnma(j);
+         
+      } else{       
+        Tensor<2> Fnpa = {}, FnpaI = {};
+        TensorA<1> PNnpa(PNnp1);      
+        fes.update_deformation_gradient(nsd, r_e, Fnpa.data, (m->param)->pFI);
+        Jnpa = ttl::det(Fnpa);
+        FnpaI = ttl::inverse(Fnpa);
+        FITNnpa = FnpaI(j, i)*PNnpa(j);
+      }
+      
+      printf("alpha: %e %e \n", dt_1_minus_alpha, dt_alpha);
+      fes.x_ip.print("x_ip");
+
+      for(int ia = 0; ia<fes.nne_bnd; ++ia){
         for(int ib = 0; ib<nsd; ++ib){
           int nid = fes.Volume2Boundary[ia];
-          be[nid*nsd+ib] += fes.N(ia)*P[ib]*fes.detJxW;
-        }
+          be[nid*ndofn+ib] += fes.N(nid)*fes.detJxW*(
+                              dt_1_minus_alpha*Jnpa*FITNnpa.data[ib] + 
+                                      dt_alpha*Jnma*FITNnma.data[ib]);
+        } 
       }
     }
   }  
@@ -198,8 +288,6 @@ void compute_Neumann_boundary_conditions(FEMLIB *fe,
 /// \param[in]     mp_id           mutiphysics id
 /// \param[in]     t               time
 /// \param[in]     dts             time step sizes a n, and n+1
-/// \param[in]     cnt_bnd_element number of integrated boundary element
-///                                used as boundary element id
 /// \return non-zero on internal error
 static int fd_res_elem_MP(double *be,
                           const int eid,
@@ -216,8 +304,7 @@ static int fd_res_elem_MP(double *be,
                           double t,
                           double *dts,
                           int include_inertia,
-                          int updated_deformation,
-                          int *cnt_bnd_element)
+                          int updated_deformation)
 {
   int err = 0;
   int intg_order = 0;
@@ -349,10 +436,9 @@ static int fd_res_elem_MP(double *be,
     }
   }
   
-  // perform 
-  
-  compute_Neumann_boundary_conditions(&fe, cnt_bnd_element, be, r_e,
-                                      grid, fv, mp_id, t, dts, include_inertia);
+  // applying NB conditions  
+  compute_Neumann_boundary_conditions(&fe, be, r_e,
+                                      grid, fv, mp_id, t, dts, include_inertia,sol->alpha);
 
   dealoc1 (r_e);
   dealoc1l (cn);
@@ -416,8 +502,10 @@ long fd_residuals_MP(Grid *grid,
   /* decision end*/
 
   int myrank = com->rank;
-  int cnt_bnd_element = 0; // count integration of 
-                           // boundary element
+  
+  // Neumann boundary condition loading values
+  if(grid->NBE.m_row*grid->NBE.m_col > 0)
+    grid->NBE(mp_id).compute_load_values(t, t-dts[DT_NP1], t-dts[DT_NP1]-dts[DT_N]);
 
   for (int i=0;i<grid->ne;i++) {
     const int nne = elem[i].toe;
@@ -427,11 +515,9 @@ long fd_residuals_MP(Grid *grid,
     const int ndofe = get_ndof_on_elem_nodes(nne,nod,grid->node,fv->ndofn);
     double *fe = aloc1 (ndofe);
 
-    // cnt_bnd_element is added if the element integration loop includes
-    // boundary element integration
     err += fd_res_elem_MP(fe, i, grid, mat, fv, sol, load, crpl,
                           com, opts, mp, mp_id, t, dts,
-                          include_inertia, updated_deformation, &cnt_bnd_element);
+                          include_inertia, updated_deformation);
 
     fd_res_assemble(fv->f_u, fe, grid->node, nne, fv->ndofn, nod, mp_id);
 
@@ -573,7 +659,7 @@ int fd_res_compute_reactions_MP(Grid *grid,
                                 Solver *sol,
                                 LoadingSteps *load,
                                 CRPL *crpl,
-                const CommunicationStructure *com,
+                                const CommunicationStructure *com,
                                 const PGFem3D_opt *opts,
                                 const Multiphysics& mp,
                                 int mp_id,
@@ -595,8 +681,7 @@ int fd_res_compute_reactions_MP(Grid *grid,
   const int n_rxn = sup->npd + 1;
   double *rxn = PGFEM_calloc(double, n_rxn);
   double *RXN = PGFEM_calloc(double, n_rxn);
-  int cnt_bnd_element = 0; // count integration of 
-                           // boundary element
+
   for(int i = 0; i < ne; i++)
   {
     const int nne = elem[el_id[i]].toe;
@@ -607,7 +692,7 @@ int fd_res_compute_reactions_MP(Grid *grid,
 
     err += fd_res_elem_MP(fe, el_id[i], grid, mat, fv, sol, load, crpl,
                           com, opts, mp, mp_id, t, dts,
-                          include_inertia, updated_deformation, &cnt_bnd_element);
+                          include_inertia, updated_deformation);
 
     // Previous may have called integration algorithm. Need to reset
     // state variables to retain consistent tangent and to ensure we

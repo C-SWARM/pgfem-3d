@@ -37,6 +37,7 @@
 #include <mkl_cblas.h>
 #include <cassert>
 #include <limits>
+#include <ttl/ttl.h>
 
 #ifndef PFEM_DEBUG
 #define PFEM_DEBUG 0
@@ -54,6 +55,17 @@ using pgfem3d::MULTISCALE_SOLUTION;
 
 const constexpr int periodic = 0;
 }
+
+template <int R, class S = double>
+using Tensor = ttl::Tensor<R, 3, S>;
+
+template <int R, class S = double *>
+using TensorA = ttl::Tensor<R, 3, S>;
+  
+static constexpr ttl::Index<'i'> i;
+static constexpr ttl::Index<'j'> j;
+static constexpr ttl::Index<'k'> k;
+static constexpr ttl::Index<'l'> l;
 
 /* This function may not be used outside of this file */
 static void coel_stiffmat(int i, /* coel ID */
@@ -344,6 +356,148 @@ static int bnd_el_stiffmat(int belem_id,
   return err;
 } /* Bounding element stiffnes matrix */
 
+void compute_Neumann_boundary_conditions_stiffnes_mat(FEMLIB *fe,
+                                                      double *lk,
+                                                      const double *r_e,
+                                                      Grid *grid,
+                                                      FieldVariables *fv,
+                                                      int mp_id,
+                                                      double dt,
+                                                      const int include_inertia,
+                                                      const double alpha){
+  return;
+  // no NBE available
+  if(grid->NBE.m_row*grid->NBE.m_col == 0)
+    return;
+  
+  // check validation of this integration  
+  const int eid = fe->curt_elem_id;
+  if(grid->NBE(mp_id).element_check(eid, 0)==0)
+    return;
+  
+  int this_bnd_elem_id = grid->NBE(mp_id).element_check(eid, 1);
+  
+  // number of boundary element to be integrated
+  const int bnd_elem_no = grid->NBE(mp_id).element_ids(this_bnd_elem_id, 1);
+
+  // number of spatial dimensions  
+  const int nsd   = fe->nsd;
+  const int ndofn = fv->ndofn;
+  
+  // mid point rule
+  double dt_1_minus_alpha = -1.0;
+    
+  // displacement at t[n] and t[n-1]
+  Matrix<double> Un, Unm1;  
+  
+  if(include_inertia){ 
+    dt_1_minus_alpha = dt*alpha*(1.0-alpha);
+    
+    Un.initialization(fe->nne*nsd, 1, 0.0);
+    
+    for(int ia=0; ia<fe->nne; ++ia){
+      for(int ib=0; ib<nsd; ++ia){
+        Un(  ia*nsd+ib) = fv->u_n[  fe->node_id(ia)*ndofn+ib];
+      }
+    }
+  }
+
+  Constitutive_model *m = fv->eps[eid].model;
+
+  for(int iA = 0; iA<bnd_elem_no; ++iA){
+    const int face_id    = grid->NBE(mp_id).bnd_elements(this_bnd_elem_id)(iA, 0);
+    const int feature_id = grid->NBE(mp_id).bnd_elements(this_bnd_elem_id)(iA, 1);
+    const int load_type  = grid->NBE(mp_id).load_type(feature_id); // same as number of boundary loads
+
+    double Pnp1[3] = {}, Pn[3] = {};
+
+    // compute pressure at t_np1
+    for(int ia=0; ia<load_type; ++ia){
+      Pnp1[ia] = grid->NBE(mp_id).load_values_np1(feature_id, ia);
+    }
+        
+    // compute pressure at t[n] if transient
+
+    if(include_inertia){                
+      for(int ia=0; ia<load_type; ++ia)
+        Pn[  ia] = grid->NBE(mp_id).load_values_n(feature_id, ia);
+    }
+    
+    if(load_type == 1){ // pressure bounary condition
+      for(int ia=2; ia<nsd; ++ia){
+        Pnp1[ia] = Pnp1[0];
+        Pn[  ia] = Pn[  0];
+      }
+    }    
+
+    // start boundary element FEM integration for
+    FemLibBoundary fes(fe, face_id, fe->intg_order);    
+
+    // apply quadrature rule 
+    for(int ip=0; ip<fes.nint; ++ip){      
+      fes.elem_basis_S(ip);
+      fes.update_shape_tensor();
+      
+      // compute pressure terms at t(n+1), t(n)
+      double PNnp1[3] = {}, PNn[3] = {};
+      if(load_type == 1){ // pressure boundary condition
+        TensorA<1> N(fes.normal);
+        for(int ia=0; ia<nsd; ++ia){
+          PNnp1[ia] = Pnp1[ia]*fes.normal[ia];
+          PNn[  ia] = Pn[  ia]*fes.normal[ia];
+        }
+      } else{             // traction boundary condition
+        for(int ia=0; ia<nsd; ++ia){
+          PNnp1[ia] = Pnp1[ia];
+          PNn[  ia] = Pn[  ia];
+        }
+      }
+      
+      // compute deformation gradient * pressure at t(n+a)
+      Tensor<2> FnpaI = {};
+      Tensor<1> PNnpa = {};
+      double Jnpa = {};
+      
+      if(include_inertia){
+
+        mid_point_rule(PNnpa.data, PNn,   Pnp1, alpha, nsd);
+        Matrix<double> Unpa(fe->nne*nsd, 1, 0.0);
+        
+        mid_point_rule(Unpa.m_pdata,   Un.m_pdata, r_e, alpha, fe->nne*nsd);
+        Tensor<2> Fnpa = {}, FnpaI = {};
+        fes.update_deformation_gradient(nsd, Unpa.m_pdata, Fnpa.data, (m->param)->pFI);
+
+        Jnpa = ttl::det(Fnpa);
+        FnpaI = ttl::inverse(Fnpa);         
+      } else{       
+        Tensor<2> Fnpa = {}, FnpaI = {};
+        for(int ia=0; ia<nsd; ++ia)
+          PNnpa.data[ia] = PNnp1[ia];
+          
+        fes.update_deformation_gradient(nsd, r_e, Fnpa.data, (m->param)->pFI);
+        Jnpa = ttl::det(Fnpa);
+        FnpaI = ttl::inverse(Fnpa);
+      }
+
+      for(int ia = 0; ia<fes.nne_bnd; ++ia){
+        int a_nid = fes.Volume2Boundary[ia];
+        for(int ic=0; ic<fes.nne_bnd; ++ic){
+          int c_nid = fes.Volume2Boundary[ic];
+          for(int id=0; id<nsd; ++id){
+            const int id_cd = idx_4_gen(ic,id,0,0,fe->nne,nsd,nsd,nsd);
+            TensorA<2> ST_cd((fes.ST)+id_cd);
+            Tensor<4> dFIdF = {};
+            dFIdF(i,j,k,l) = -FnpaI(j,k)*FnpaI(l,i);
+            Tensor<1> FIT = (FnpaI(l,k)*ST_cd(k,l)*FnpaI(j,i) - dFIdF(i,j,k,l)*ST_cd(k,l))*PNnpa(j);
+
+            const int lk_idx = idx_K(a_nid,id,c_nid,id,fe->nne,nsd);              
+            lk[lk_idx] += fes.N(a_nid)*fes.detJxW*dt_1_minus_alpha*Jnpa*FIT.data[id];
+          }
+        }
+      }
+    }
+  }  
+}
 
 /// compute element stiffness matrix
 ///
@@ -443,6 +597,9 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
     } // switch (analysis)
   } // if(include_inertia)
 
+  compute_Neumann_boundary_conditions_stiffnes_mat(fe, lk, r_e,
+                                                   grid, fv, mp_id, dt, 
+                                                   include_inertia,sol->alpha);
   if(err>0)
   {
     PGFEM_printf("Error is detected: eid = %d\n", eid);
@@ -473,7 +630,6 @@ int el_compute_stiffmat_MP(FEMLIB *fe,
 /// \param[in] mp_id mutiphysics id
 /// \param[in] dt time step size
 /// \param[in] iter number of Newton Raphson interataions
-/// \param[in] myrank current process rank
 /// \return non-zero on internal error
 static int el_stiffmat_MP(int eid,
                           double **Lk,

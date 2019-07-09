@@ -826,6 +826,7 @@ NeumannBoundaryElement::construct_list_of_boundary_elements(Element *elem,
                                                             const int elemno,
                                                             const int nsd){
   this->nbe_no = 0;
+  this->element_check.initialization(elemno, 2, 0);
   
   // count number of element with NBE
   for(int eid=0; eid<elemno; ++eid){
@@ -834,16 +835,15 @@ NeumannBoundaryElement::construct_list_of_boundary_elements(Element *elem,
     int bnd_elem_no = fe.number_of_boundary_elements(elem[eid].toe, nsd);
         
     // check this element has features for NB
-    bool element_has_bnd_element = false;
     for(int ia=0; ia<this->feature_no; ++ia){
       for(int ib = 0; ib<bnd_elem_no; ++ib){
         if(this->bnd_feature(ia) == elem[eid].bnd_type[ib] &&
            this->bnd_feature_id(ia) == elem[eid].bnd_id[ib]){
-          element_has_bnd_element = true;
+          this->element_check(eid, 0) = 1;
           break;
         }
       }
-      if(element_has_bnd_element){
+      if(this->element_check(eid, 0) == 1){
         ++(this->nbe_no); 
         break;
       }
@@ -856,6 +856,9 @@ NeumannBoundaryElement::construct_list_of_boundary_elements(Element *elem,
   // re-visit element to set list of NBE
   int nbe_cnt = 0;
   for(int eid=0; eid<elemno; ++eid){
+    if(this->element_check(eid, 0)==0)
+      continue;
+      
     FEMLIB fe;
     // number of boundary element in element[eid]
     int bnd_elem_no = fe.number_of_boundary_elements(elem[eid].toe, nsd);
@@ -876,6 +879,7 @@ NeumannBoundaryElement::construct_list_of_boundary_elements(Element *elem,
     }
     if(cnt_bnd_elem>0){ // if this element has NB elements
                         // set size and feature ids
+      this->element_check(eid, 1)   = nbe_cnt;
       this->element_ids(nbe_cnt, 0) = eid;
       this->element_ids(nbe_cnt, 1) = cnt_bnd_elem;      
       this->bnd_elements(nbe_cnt).initialization(cnt_bnd_elem, 2, 0);
@@ -940,5 +944,31 @@ NeumannBoundaryElement::read_loads(const std::string &in_dir,
   else{
     std::cout << "Cannot open [" << fn.str() << "]" << endl;
     abort();
+  }
+}
+
+/// compute load values from string_function_of_time using string in load
+///
+/// \param[in] tnp1 time at n+1
+/// \param[in] tn   time at n
+/// \param[in] tnm1 time at n-1
+void
+NeumannBoundaryElement::compute_load_values(double tnp1,
+                                            double tn,
+                                            double tnm1){
+
+  //cannot guarantee calling function with negative time is valid
+  if(tn<0)
+    tn = 0.0;
+    
+  if(tnm1<0)
+    tnm1 = 0.0;
+    
+  for(int ia=0; ia<feature_no; ++ia){
+    for(int ib=0; ib<load_type(ia); ++ib){
+      load_values_np1(ia, ib) = string_function_of_time(load(ia, ib), tnp1);
+      load_values_n(  ia, ib) = string_function_of_time(load(ia, ib), tn);
+      load_values_nm1(ia, ib) = string_function_of_time(load(ia, ib), tnm1);
+    }
   }
 }

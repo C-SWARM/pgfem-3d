@@ -589,3 +589,48 @@ void post_processing_max_pressure(const Grid &grid,
     }
   }
 }
+
+/// compute surface area of face on which 
+/// Neumann boundary (NB) conditions are applied
+///
+/// \param[in] grid an object containing all mesh info
+/// \param[in] com  communication object
+void post_processing_compute_NBE_area(Grid &grid,
+                                      const pgfem3d::CommunicationStructure *com){
+
+  if(grid.NBE.m_row*grid.NBE.m_col == 0)
+    return;
+          
+  for(int mp_id = 0; mp_id<grid.NBE.m_row*grid.NBE.m_col; ++mp_id){
+
+    double lA = 0.0;
+    double gA = 0.0;
+              
+    for(int nbe_id = 0; nbe_id < grid.NBE(mp_id).nbe_no; ++nbe_id)
+    {
+      const int eid = grid.NBE(mp_id).element_ids(nbe_id, 0);
+      FEMLIB fe(eid, grid.element, grid.node, 1, 1);
+
+      // number of boundary element to be integrated
+      const int bnd_elem_no = grid.NBE(mp_id).element_ids(nbe_id, 1);      
+      
+      for(int iA = 0; iA<bnd_elem_no; ++iA){      
+        const int face_id = grid.NBE(mp_id).bnd_elements(nbe_id)(iA, 0);      
+        FemLibBoundary fes(&fe, face_id, fe.intg_order);
+      
+        // apply quadrature rule 
+        for(int ip=0; ip<fes.nint; ++ip){
+          fes.elem_basis_S(ip);
+          lA += fes.detJxW;
+        }
+      }
+    }
+    
+  
+    com->net->allreduce(&lA,&gA,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
+    
+    if(com->rank==0)
+      std::cout << "Surface area (Neumann boundary (NB) conditions for physics " << mp_id << ") = " << gA << endl;
+  }
+}
+                                    

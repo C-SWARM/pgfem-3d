@@ -94,10 +94,10 @@ static const constexpr int kez_map_Hex[6][4] = {{1, 0, 2, -1},  // ksi2D(0) -> e
                                                 {2, 0, 1,  1},  // ksi2D(0) -> zet3D(2), eta2D(1) -> ksi3D(0), eta3D(1) =  1
                                                 {2, 1, 0, -1}}; // ksi2D(0) -> zet3D(2), eta2D(1) -> eta3D(1), ksi3D(0) = -1
 
-static const constexpr int kez_map_Tet[4][4] = {{0,1, 2, 0},  // ksi2D(0) -> ksi3D(0), eta2D(1) -> eta3D(1), zet3D(2) = 0
+static const constexpr int kez_map_Tet[4][4] = {{1,0, 2, 0},  // ksi2D(0) -> ksi3D(0), eta2D(1) -> eta3D(1), zet3D(2) = 0
                                                 {0,2, 1, 0},  // ksi2D(0) -> ksi3D(0), eta2D(1) -> zet3D(2), eta2D(1) = 0
                                                 {0,1, 2, 0},  // ksi2D(0) -> ksi3D(0), eta2D(1) -> eta3D(1), zet3D(2) = 1 - ksi_3D - eta_3D;
-                                                {1,2, 0, 0}}; // ksi2D(0) -> eta3D(1), eta2D(1) -> zet3D(2), ksi3D(0) = 0
+                                                {0,1, 2, 0}}; // ksi2D(0) -> eta3D(1), eta2D(1) -> zet3D(2), ksi3D(0) = 0
                                                   
 /// print errors and abort PGFem3D
 /// 
@@ -153,7 +153,7 @@ void PGFem3D_N(const int element_type,
       N[2] = eta*(2.0*eta - 1.0);
       N[3] = 4.0*ksi*(1.0 - ksi - eta);
       N[4] = 4.0*ksi*eta;
-      N[5] = 4.0*eta*(1.0 - ksi - eta);      
+      N[5] = 4.0*eta*(1.0 - ksi - eta);
       break;
     case TETRAHEDRON:
       N[0] = (1.0 - ksi - eta - zet);
@@ -244,7 +244,7 @@ void compute_dN_dkez(const int element_type,
       dN(3, 0) = 4.0 - 8.0*ksi - 4.0*eta; dN(3, 1) =                -4.0*ksi;
       dN(4, 0) =                 4.0*eta; dN(4, 1) =                 4.0*ksi;
       dN(5, 0) =                -4.0*eta; dN(5, 1) = 4.0 - 4.0*ksi - 8.0*eta;
-      break;
+      break;      
     case TETRAHEDRON:
       dN(0, 0) = -1.0; dN(0, 1) = -1.0; dN(0, 2) = -1.0;      
       dN(1, 0) = +1.0; dN(1, 1) =  0.0; dN(1, 2) =  0.0;      
@@ -492,7 +492,6 @@ double PGFem3D_dNdX_Vol2Bnd(const int element_type_vol,
                             const double eta,
                             const double zet,
                             Matrix<double> &X_vol,
-                            Matrix<double> &X_bnd,
                             Matrix<double> &dNdX,
                             double *normal,
                             const int *kez_map,
@@ -522,12 +521,12 @@ double PGFem3D_dNdX_Vol2Bnd(const int element_type_vol,
   for(int ib=0; ib<nsd; ++ib){
     for(int ic=0; ic<nsd-1; ++ic){
       for(int ia=0; ia<nne_bnd; ++ia)
-        dX(ib,ic) += dN_bnd(ia, ic)*X_bnd(ia, ib);
+        dX(ib,ic) += dN_bnd(ia, ic)*X_vol(Vol2Bnd[ia], ib);
     }
   }
   
   if(nsd<3)
-    dX(3,2) = 1.0;
+    dX(2,1) = 1.0;
     
   // compute norm(cross(dX(:, 1), dX(:, 2)))  
   double v0 = dX(1,0)*dX(2,1) - dX(1,1)*dX(2,0);
@@ -802,11 +801,23 @@ template <class GP> class QuadratureRuleBoundary : public QuadratureRule{
       double *kez3D[3] = {ksi.m_pdata, eta.m_pdata, zet.m_pdata};
       
       for(int ia=0; ia<gp.gpno; ++ia){
-        kez3D[kez_map_Tet[face_id][0]][ia] = gp.gk[ia];
-        kez3D[kez_map_Tet[face_id][1]][ia] = gp.ge[ia];
-        if(face_id==2)
-          zet(ia) = 1.0 - gp.gk[ia] - gp.ge[ia];
-        weights(ia) = gp.weights[ia];
+        if(face_id==2){
+          double k = 0.707106781186548*(gp.ge[ia] + 2.0*gp.gk[ia]);
+          double e = 1.224744871391589*gp.ge[ia];
+          //weights(ia) = gp.weights[ia]*5.371009241333561;
+          
+          //double k = gp.gk[ia];
+          //double e = gp.ge[ia];
+                    
+          kez3D[kez_map_Tet[face_id][0]][ia] = k;
+          kez3D[kez_map_Tet[face_id][1]][ia] = e;          
+          kez3D[kez_map_Tet[face_id][2]][ia] = 1.0 - gp.gk[ia] - gp.ge[ia];
+          weights(ia) = gp.weights[ia];
+        }else{
+          kez3D[kez_map_Tet[face_id][0]][ia] = gp.gk[ia];
+          kez3D[kez_map_Tet[face_id][1]][ia] = gp.ge[ia];
+          weights(ia) = gp.weights[ia];
+        }
       }
     }
          
@@ -866,11 +877,10 @@ int number_of_integration_points_line(const int order){
 int number_of_integration_points_tri(const int order){
   switch(order){
     case 0:
-    case 1:
       return 1;
-    case 2:
+    case 1:
       return 3;
-    case 3:
+    case 2:
       return 4;
     default:
       PGFEM_printerr("ERROR: number of integration points: order %d is not implemented for TRIANGLE element.\n", order);
@@ -1003,12 +1013,14 @@ FEMLIB::initialization(const int nne,
     e_order = QuadraticElement;  
 
   this->intg_order = i_order;
-  if(i_order == 0){
-    // these elements need at least 1st order accuracy
-    if(this->elem_type == QUADRILATERAL || this->elem_type == HEXAHEDRAL    ||
-       this->elem_type == QTRIANGLE     || this->elem_type == QTETRAHEDRON)
+
+  // these elements need at least 1st order accuracy
+  if(i_order == 0 && (this->elem_type == QUADRILATERAL || 
+                      this->elem_type == HEXAHEDRAL    || 
+                      this->elem_type == QTRIANGLE     ||
+                      this->elem_type == QTETRAHEDRON)){
       this->intg_order = 1;
-  }  
+  }
       
   this->nint = this->determine_integration_type(this->elem_type, e_order, this->intg_order);
 
@@ -1405,17 +1417,18 @@ FemLibBoundary::initialization(FEMLIB *fe,
   this->nne = fe->nne;
   this->nne_bnd = nne_boundary(fe->elem_type);
   this->curt_elem_id = fe->curt_elem_id;
-  this->elem_type = element_type(this->nne_bnd, 2);
+  this->elem_type = element_type(this->nne_bnd, this->nsd-1);
   
   int e_order = LinearElement;
 
   if(this->elem_type == QTRIANGLE)
     e_order = QuadraticElement; 
-   
+
   this->intg_order = i_order;
-  if(i_order == 0){
-    // these elements need at least 1st order accuracy
-    if(this->elem_type == QUADRILATERAL || this->elem_type == QTRIANGLE)
+   
+  // these elements need at least 1st order accuracy
+  if(i_order == 0 && (this->elem_type == QUADRILATERAL ||
+                      this->elem_type == QTRIANGLE)){
       this->intg_order = 1;
   }
   
@@ -1524,7 +1537,7 @@ FemLibBoundary::initialization(FEMLIB *fe,
 
   // copy all volumetric nodal values to boundary
   for(int ia=0; ia<this->nne; ++ia){
-    this->node_id(ia) = this->feVol->node_id.m_pdata[ia];
+    this->node_id(ia) = this->feVol->node_id(ia);
     x[ia] = fe->temp_v.x.m_pdata[ia];
     y[ia] = fe->temp_v.y.m_pdata[ia];
     z[ia] = fe->temp_v.z.m_pdata[ia];        
@@ -1595,7 +1608,6 @@ FemLibBoundary::elem_basis_S(const int ip)
                                     this->nne_bnd,
                                     this->nsd, ksi_ip, eta_ip, zet_ip,
                                     this->feVol->node_coord,
-                                    this->node_coord,
                                     this->dN,
                                     this->normal,
                                     this->kez_map,

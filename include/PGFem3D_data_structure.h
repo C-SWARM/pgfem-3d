@@ -39,6 +39,10 @@ class NeumannBoundaryElement{
     Matrix<int> load_type;    //!< NBC type,    1: for load = t.N
                               //             nsd : load = [tx, ty, tz] nsd = [1,3]
     Matrix<Matrix<int>> bnd_elements; //!< list of boundary element for element in element_ids
+    Matrix<double> load_values_np1; //!< load values compted from load at t(n+1)
+    Matrix<double> load_values_n;   //!< load values compted from load at t(n) 
+    Matrix<double> load_values_nm1; //!< load values compted from load at t(n-1)
+    Matrix<int>    element_check;   //!< check for element loop 
     
     // set all zero
     NeumannBoundaryElement(){
@@ -53,6 +57,9 @@ class NeumannBoundaryElement{
       features.initialization(feature_no, 2, 0);
       load.initialization(feature_no, dof);
       load_type.initialization(feature_no, 1);
+      load_values_np1.initialization(feature_no, dof);
+      load_values_n.initialization(  feature_no, dof);
+      load_values_nm1.initialization(feature_no, dof);
     }
     
     // get T3D feature
@@ -76,6 +83,10 @@ class NeumannBoundaryElement{
                     const std::string &load_name, 
                     const int feature_id,
                     const int load_id);
+    // compute load values at t(n+1), t(n), and t(n-1_
+    void compute_load_values(double tnp1,
+                             double tn,
+                             double tnm1);
 };
 
 /// Time stepping struct

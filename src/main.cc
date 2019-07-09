@@ -1106,6 +1106,8 @@ int single_scale_main(int argc,char *argv[])
     GVolume = T_VOLUME (grid.ne,ndim,grid.element,grid.node);
 
     net->allreduce(&GVolume,&oVolume,1,NET_DT_DOUBLE,NET_OP_SUM,com0->comm);
+    
+    post_processing_compute_NBE_area(grid, &com[0]);
     if (myrank == 0){
       PGFEM_printf ("oVolume = %12.12f\n",oVolume);
     }
