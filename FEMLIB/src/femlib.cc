@@ -802,15 +802,8 @@ template <class GP> class QuadratureRuleBoundary : public QuadratureRule{
       
       for(int ia=0; ia<gp.gpno; ++ia){
         if(face_id==2){
-          double k = 0.707106781186548*(gp.ge[ia] + 2.0*gp.gk[ia]);
-          double e = 1.224744871391589*gp.ge[ia];
-          //weights(ia) = gp.weights[ia]*5.371009241333561;
-          
-          //double k = gp.gk[ia];
-          //double e = gp.ge[ia];
-                    
-          kez3D[kez_map_Tet[face_id][0]][ia] = k;
-          kez3D[kez_map_Tet[face_id][1]][ia] = e;          
+          kez3D[kez_map_Tet[face_id][0]][ia] = gp.gk[ia];
+          kez3D[kez_map_Tet[face_id][1]][ia] = gp.ge[ia];
           kez3D[kez_map_Tet[face_id][2]][ia] = 1.0 - gp.gk[ia] - gp.ge[ia];
           weights(ia) = gp.weights[ia];
         }else{

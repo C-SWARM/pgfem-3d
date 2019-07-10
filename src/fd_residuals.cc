@@ -130,9 +130,11 @@ void compute_Neumann_boundary_conditions(FEMLIB *fe,
                                          double *dts,
                                          const int include_inertia,
                                          const double alpha){
-  return;
   // no NBE available
   if(grid->NBE.m_row*grid->NBE.m_col == 0)
+    return;
+    
+  if(grid->NBE(mp_id).nbe_no == 0)
     return;
   
   // check validation of this integration  
@@ -257,9 +259,6 @@ void compute_Neumann_boundary_conditions(FEMLIB *fe,
         FnpaI = ttl::inverse(Fnpa);
         FITNnpa = FnpaI(j, i)*PNnpa(j);
       }
-      
-      printf("alpha: %e %e \n", dt_1_minus_alpha, dt_alpha);
-      fes.x_ip.print("x_ip");
 
       for(int ia = 0; ia<fes.nne_bnd; ++ia){
         for(int ib = 0; ib<nsd; ++ib){

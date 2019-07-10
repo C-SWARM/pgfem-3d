@@ -365,9 +365,11 @@ void compute_Neumann_boundary_conditions_stiffnes_mat(FEMLIB *fe,
                                                       double dt,
                                                       const int include_inertia,
                                                       const double alpha){
-  return;
   // no NBE available
   if(grid->NBE.m_row*grid->NBE.m_col == 0)
+    return;
+    
+  if(grid->NBE(mp_id).nbe_no == 0)
     return;
   
   // check validation of this integration  
