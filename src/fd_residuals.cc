@@ -246,7 +246,7 @@ void compute_Neumann_boundary_conditions(FEMLIB *fe,
 
         Jnpa = ttl::det(Fnpa);
         FnpaI = ttl::inverse(Fnpa);
-        Jnma = ttl::det(Fnpa);
+        Jnma = ttl::det(Fnma);
         FnmaI = ttl::inverse(Fnma);
         FITNnpa = FnpaI(j, i)*PNnpa(j);
         FITNnma = FnmaI(j, i)*PNnma(j);
