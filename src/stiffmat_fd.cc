@@ -398,7 +398,7 @@ void compute_Neumann_boundary_conditions_stiffnes_mat(FEMLIB *fe,
     Un.initialization(fe->nne*nsd, 1, 0.0);
     
     for(int ia=0; ia<fe->nne; ++ia){
-      for(int ib=0; ib<nsd; ++ia){
+      for(int ib=0; ib<nsd; ++ib){
         Un(  ia*nsd+ib) = fv->u_n[  fe->node_id(ia)*ndofn+ib];
       }
     }

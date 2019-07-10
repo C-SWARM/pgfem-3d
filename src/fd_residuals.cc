@@ -166,7 +166,7 @@ void compute_Neumann_boundary_conditions(FEMLIB *fe,
     Unm1.initialization(fe->nne*nsd, 1, 0.0);
     
     for(int ia=0; ia<fe->nne; ++ia){
-      for(int ib=0; ib<nsd; ++ia){
+      for(int ib=0; ib<nsd; ++ib){
         Un(  ia*nsd+ib) = fv->u_n[  fe->node_id(ia)*ndofn+ib];
         Unm1(ia*nsd+ib) = fv->u_nm1[fe->node_id(ia)*ndofn+ib];
       }
