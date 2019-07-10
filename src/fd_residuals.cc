@@ -152,7 +152,7 @@ void compute_Neumann_boundary_conditions(FEMLIB *fe,
   const int ndofn = fv->ndofn;
   
   // mid point rule
-  double dt_1_minus_alpha =  1.0;
+  double dt_1_minus_alpha =  -1.0;
   double dt_alpha         =  0.0;
     
   // displacement at t[n] and t[n-1]
@@ -217,9 +217,9 @@ void compute_Neumann_boundary_conditions(FEMLIB *fe,
       if(load_type == 1){ // pressure boundary condition
         TensorA<1> N(fes.normal);
         for(int ia=0; ia<nsd; ++ia){
-          PNnp1[ia] = Pnp1[ia]*fes.normal[ia];
-          PNn[  ia] = Pn[  ia]*fes.normal[ia];
-          PNnm1[ia] = Pnm1[ia]*fes.normal[ia];
+          PNnp1[ia] = Pnp1[0]*fes.normal[ia];
+          PNn[  ia] = Pn[  0]*fes.normal[ia];
+          PNnm1[ia] = Pnm1[0]*fes.normal[ia];
         }
       } else{             // traction boundary condition
         for(int ia=0; ia<nsd; ++ia){
@@ -251,7 +251,7 @@ void compute_Neumann_boundary_conditions(FEMLIB *fe,
         FITNnpa = FnpaI(j, i)*PNnpa(j);
         FITNnma = FnmaI(j, i)*PNnma(j);
          
-      } else{       
+      } else{
         Tensor<2> Fnpa = {}, FnpaI = {};
         TensorA<1> PNnpa(PNnp1);      
         fes.update_deformation_gradient(nsd, r_e, Fnpa.data, (m->param)->pFI);
