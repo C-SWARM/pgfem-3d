@@ -344,8 +344,12 @@ int read_input_file(const PGFem3D_opt *opts,
       sprintf(fn_bc, "%s/%s_%d.bc", BC, physicsnames[i], myrank);
       sprintf(fn_bcv, "%s/%s.bcv", BC, physicsnames[i]);
 
-      if (FILE *fp = fopen(fn_bc, "r")) {
-        sup[i] = read_Dirichlet_BCs(fp, *nn, ndim[i], *node, i);
+      // sup[i] is allocated in read_Dirichlet_BCs such thtat
+      // read_Dirichlet_BCs function must be called even though fp is NULL.
+      FILE *fp = fopen(fn_bc, "r");
+      sup[i] = read_Dirichlet_BCs(fp, *nn, ndim[i], *node, i);
+
+      if(fp!=NULL){
         fclose(fp);
       }
 

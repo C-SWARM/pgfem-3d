@@ -52,9 +52,10 @@ SUPP read_Dirichlet_BCs(FILE *in,
   SUPP sup = PGFEM_calloc (SUPP_1, 1);
 
   // read supported nodes
-  if (in) {
+  if(in==NULL)
+    sup->nsn = 0;
+  else
     CHECK_SCANF(in, "%ld", &sup->nsn);
-  }
 
   if (sup->nsn == 0)  {
     sup->supp = PGFEM_calloc (long, 1);
