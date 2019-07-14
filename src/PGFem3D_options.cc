@@ -93,7 +93,7 @@ const Option analysis_opts[] = {
 const Option solver_opts[] = {
   /* Solver options */
   {{"hypre",no_argument,NULL,3}, "\tUse the HYPRE package",0},
-  {{"trilinos",no_argument,NULL,3}, "\tUse the TRILINOS package",0},
+  {{"trilinos",no_argument,NULL,3}, "Use the TRILINOS package",0},
   {{"gmres",no_argument,NULL,3},"\tUse the HYPRE GMRES solver (default)",0},
   {{"boomer",no_argument,NULL,3},"\tUse the HYPRE BoomerAMG solver (no precond)",0},
   {{"bcgstab",no_argument,NULL,3},"Use the HYPRE BiCGSTAB solver",0},
@@ -104,7 +104,8 @@ const Option solver_opts[] = {
   {{"maxit",required_argument,NULL,3},"Set the maximum number of iterations",0},
   {{"noLS",no_argument,NULL,3},"\tNo use line search, default = Yes",0},
   {{"at",no_argument,NULL,3},"\tUse adaptive time stepping, default = No",0},
-  {{"noCCE",no_argument,NULL,3},"\tNo converge check on energy norm, default = Yes",0}
+  {{"noCCE",no_argument,NULL,3},"\tNo converge check on energy norm, default = Yes",0},
+  {{"noSBDVLimits",no_argument,NULL,3},"No subdivision limits, default = No",0}  
 };
 
 const Option precond_opts[] = {
@@ -208,6 +209,7 @@ void set_default_options(PGFem3D_opt *options)
   options->solution_scheme_opt[LINE_SEARCH]              = 1;
   options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING]   = 0;
   options->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM] = 1;
+  options->solution_scheme_opt[NO_SUBDIVISION_LIMITS]    = false;
 
   /* analysis options */
   options->analysis_type = -1;
@@ -277,6 +279,11 @@ void print_options(FILE *out, const PGFem3D_opt *options)
     PGFEM_fprintf(out,"EXIT WITH ENERGY NORM IS CONVERGED is enabled\n");
   else
     PGFEM_fprintf(out,"EXIT WITH ENERGY NORM IS CONVERGED is disabled\n");
+    
+  if(options->solution_scheme_opt[NO_SUBDIVISION_LIMITS])
+    PGFEM_fprintf(out,"No limits in the subdivision scheme\n");
+  else
+    PGFEM_fprintf(out,"EXIT on reaching maximum subdivision limits\n");
 
   PGFEM_fprintf(out,"\n=== ANALYSIS OPTIONS ===\n");
   PGFEM_fprintf(out,"Analysis type:      %d\n",options->analysis_type);
@@ -600,6 +607,9 @@ void re_parse_command_line(const int myrank,
       else if (strcmp("noCCE", opts[opts_idx].name) == 0) {
         options->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM] = 0;
       }
+      else if (strcmp("noSBDVLimits", opts[opts_idx].name) == 0) {
+        options->solution_scheme_opt[NO_SUBDIVISION_LIMITS] = true;
+      }      
       break;
 
       /* PRECOND OPTIONS */

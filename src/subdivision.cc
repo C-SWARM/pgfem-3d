@@ -15,17 +15,13 @@
 #include "stabilized.h"
 #include <cmath>
 
-static constexpr int MAX_STEP = 10000;
-static constexpr double MIN_D_TIME = 1.0e-15;
-
 using namespace pgfem3d;
 using namespace multiscale::net;
-
+                       
 /// determine time step size based on the previous time step convergence history
 /// and physics based evolution rate.
 ///
 /// \param[in] was_NR_ok if 1, previous iteration was successful
-/// \param[in, out] sp container of subdivision parameters
 /// \param[in, out] dt time step size, new value will be updated
 /// \param[in, out] times time at t(tim-1), t(tim), and t(tim+1), times[tim] will be updated
 /// \param[in] tim time step id
@@ -33,29 +29,27 @@ using namespace multiscale::net;
 /// \param[in] maximum number of iteration defined in the iterative solver
 /// \param[in] alpha physics based evolution parameters
 /// \return non-zero on internal error
-int subdivision_scheme(int was_NR_ok,
-                       SUBDIVISION_PARAM *sp,
-                       double *dt,
-                       double *times,
-                       long tim,
-                       int iter,
-                       int max_iter,
-                       double alpha,
-                       const CommunicationStructure *com)
+void 
+SubdivisionScheme::do_subdivision(int was_NR_ok,
+                                  double *dt,
+                                  double *times,
+                                  long tim,
+                                  int iter,
+                                  int max_iter,
+                                  double alpha,
+                                  const CommunicationStructure *com)
 {
-  int err = 0;
-
-  int step_size   = sp->step_size;
-  int step_id     = sp->step_id;
-  int decellerate = sp->decellerate;
-  int accellerate = sp->accellerate;
-  double dt_0     = sp->dt_0;
+  int var_step_size   = this->step_size;
+  int var_step_id     = this->step_id;
+  int var_decellerate = this->decellerate;
+  int var_accellerate = this->accellerate;
+  double var_dt_0     = this->dt_0;
 
   int is_subdivided_when_step_size_eq_1 = 0;
 
-  sp->reset_variables        = 0;
-  sp->is_subdivided          = 0;
-  sp->need_to_update_loading = 0;
+  this->reset_variables        = 0;
+  this->is_subdivided          = 0;
+  this->need_to_update_loading = 0;
 
   long i;
 
@@ -65,27 +59,27 @@ int subdivision_scheme(int was_NR_ok,
 
   if(was_NR_ok == 0) // Step converged
   {
-    decellerate = 0; // reset decelleration flag
-    if(step_id == 0) //  1st subdivision
+    var_decellerate = 0; // reset decelleration flag
+    if(var_step_id == 0) //  1st subdivision
     {
       if(tim == 0)
-        step_size = 1;
+        var_step_size = 1;
       else
       {
         // not 1st step, compute subdivision based on previous step
         // compute step_size based on previous convergence properties
         // (times[tim-1] is modified by subdivision procedure
-        step_size +=((times[tim+1] - times[tim])/(times[tim] - times[tim-1]) - 1);
+        var_step_size +=((times[tim+1] - times[tim])/(times[tim] - times[tim-1]) - 1);
 
-        if(step_size <= 0)
-          step_size = 1;
+        if(var_step_size <= 0)
+          var_step_size = 1;
 
-        *dt = (times[tim+1] - times[tim])/(step_size);
+        *dt = (times[tim+1] - times[tim])/(var_step_size);
       }
     }
     else
     {
-      // step_id != 0
+      // var_step_id != 0
       //===== ACCELERATE =====
       // compute the acceleration scaling parameter. NOTE: smaller
       // gama --> larger acceleration
@@ -93,147 +87,153 @@ int subdivision_scheme(int was_NR_ok,
       {
         if(iter > max_iter)       // max_iter reached, accel. slowly
         {
-          dt_0 = *dt;
+          var_dt_0 = *dt;
           gama = 0.91;            // slow acceleration
-          accellerate = 0;        // do not over accelerate if catch next step
+          var_accellerate = 0;        // do not over accelerate if catch next step
         }
-        else if(accellerate == 0) // first acceleration
+        else if(var_accellerate == 0) // first acceleration
         {
-          dt_0 = *dt;
+          var_dt_0 = *dt;
           gama = 0.75;
-          accellerate = 1;
+          var_accellerate = 1;
         }
         else
         {
-          gama = 1./exp(accellerate*1./2.);
-          accellerate += 1;
+          gama = 1./exp(var_accellerate*1./2.);
+          var_accellerate += 1;
         }
       }
       else if(alpha <= 0.8)       // physics nearing optimum
       {
-        dt_0 = *dt;
+        var_dt_0 = *dt;
         gama = 0.8;
-        accellerate = 0;
+        var_accellerate = 0;
       }
       else if(alpha > 0.8)        // physics very near optimum, asymptotically accelerate
       {
-        dt_0 = *dt;
+        var_dt_0 = *dt;
         gama = alpha;             // note alpha > 1 automatically decellerates!
-        (accellerate) = 0;
+        (var_accellerate) = 0;
       }
 
-      *dt = (times[tim+1] - times[tim])/(step_size)*step_id;
+      *dt = (times[tim+1] - times[tim])/(var_step_size)*var_step_id;
       times[tim] += *dt;
 
-      sp->need_to_update_loading = 1;
-      sp->loading_factor = 1.0/step_size*step_id;
+      this->need_to_update_loading = 1;
+      this->loading_factor = 1.0/var_step_size*var_step_id;
 
       // compute new number of steps
-      *dt = dt_0/gama;
+      *dt = var_dt_0/gama;
       nor = (times[tim+1] - times[tim])/(*dt);
-      step_size = round1 (nor);
-      if(step_size <= 0)
-        step_size = 1;
-      *dt = (times[tim+1] - times[tim])/(step_size);
-      if(step_size == 1)
+      var_step_size = round1 (nor);
+      if(var_step_size <= 0)
+        var_step_size = 1;
+      *dt = (times[tim+1] - times[tim])/(var_step_size);
+      if(var_step_size == 1)
         is_subdivided_when_step_size_eq_1 = 1;
-      step_id = 0;
+      var_step_id = 0;
     }
   }
   else
   {
-    if(step_id == 0) // 1st subdivision
+    if(var_step_id == 0) // 1st subdivision
     {
-      if(decellerate == 0) // 1st load stepping
+      if(var_decellerate == 0) // 1st load stepping
       {
         // decellerate based on physics. If would
         // decellerate more based on physics, then
         // do it, otherwise use exponential
         if(alpha > 4./3.)
         {
-          dt_0 = *dt;
+          var_dt_0 = *dt;
           gama = 1.0/alpha;
-          decellerate = 0;
+          var_decellerate = 0;
         }
         else
         {
-          dt_0 = *dt;
+          var_dt_0 = *dt;
           gama = 0.75;
-          decellerate = 1;
+          var_decellerate = 1;
         }
       }
       else
       {
-        gama = 1./exp(decellerate*1./2.);
-        decellerate += 1;
+        gama = 1./exp(var_decellerate*1./2.);
+        var_decellerate += 1;
       }
 
       // compute number of steps
-      *dt = dt_0*gama;
+      *dt = var_dt_0*gama;
       nor = (times[tim+1] - times[tim])/(*dt);
       i = round1 (nor);
-      if(i <= step_size)
-        step_size += 1;
+      if(i <= var_step_size)
+        var_step_size += 1;
       else
-        step_size = i;
-      if(step_size <= 0)
-        step_size = 1;
-      *dt = (times[tim+1] - times[tim])/(step_size);
-      accellerate = 0;
+        var_step_size = i;
+      if(var_step_size <= 0)
+        var_step_size = 1;
+      *dt = (times[tim+1] - times[tim])/(var_step_size);
+      var_accellerate = 0;
     }
     else
     {
       // load is subdivided and successfully completed at least
       // one step. Update time, compute remaining load and subdivide again
-      dt_0 = *dt;
+      var_dt_0 = *dt;
       gama = 0.75;
-      decellerate = 1;
-      *dt = (times[tim+1] - times[tim])/(step_size)*step_id;
+      var_decellerate = 1;
+      *dt = (times[tim+1] - times[tim])/(var_step_size)*var_step_id;
       times[tim] += *dt;
 
-      sp->need_to_update_loading = 1;
-      sp->loading_factor = 1.0/step_size*step_id;
+      this->need_to_update_loading = 1;
+      this->loading_factor = 1.0/var_step_size*var_step_id;
 
       // compute number of steps
-      *dt = dt_0*gama;
+      *dt = var_dt_0*gama;
       nor = (times[tim+1] - times[tim])/(*dt);
       i = round1 (nor);
-      if(i <= (step_size-step_id))
-        step_size += 1;
-      if(step_size <= 0)
-        step_size = 1;
-      *dt = (times[tim+1] - times[tim])/(step_size);
-      step_id = 0;
-      accellerate = 0;
+      if(i <= (var_step_size-var_step_id))
+        var_step_size += 1;
+      if(var_step_size <= 0)
+        var_step_size = 1;
+      *dt = (times[tim+1] - times[tim])/(var_step_size);
+      var_step_id = 0;
+      var_accellerate = 0;
     }
 
     if(myrank == 0)
     {
       PGFEM_printf("\n[%ld] Sub. steps = %ld :: gama = %e ||"
-                   " Time %e | dt = %e\n", tim,step_size,gama,times[tim+1],*dt);
+                   " Time %e | dt = %e\n", tim,var_step_size,gama,times[tim+1],*dt);
     }
 
-    sp->reset_variables = 1;
+    this->reset_variables = 1;
 
-    if(gama < 1.0 / MAX_STEP || step_size > MAX_STEP || *dt  < MIN_D_TIME)
+    if(gama < 1.0 / this->max_subdivision_allowed || 
+       var_step_size > this->max_subdivision_allowed || 
+       *dt  < this->min_dt_allowed)
     {
-      if(myrank == 0)
-        PGFEM_printf ("Error in Subdivision routine\n");
-      PGFEM_Comm_code_abort (com,i);
+      if(this->no_subdivision_limits){
+        if(myrank == 0)
+          PGFEM_printf ("Subdivision reaches maximum limits, but keep proceeding.\n");
+      } else{
+        if(myrank == 0)
+          PGFEM_printf ("Error in Subdivision routine\n");
+        PGFEM_Comm_code_abort (com,i);
+      }
     }
   }
 
-  if(step_size > 1 || is_subdivided_when_step_size_eq_1)
-    sp->is_subdivided = 1;
+  if(var_step_size > 1 || is_subdivided_when_step_size_eq_1)
+    this->is_subdivided = 1;
 
   // update new time steps
-  sp->step_size   = step_size;
-  sp->step_id     = step_id;
-  sp->decellerate = decellerate;
-  sp->accellerate = accellerate;
-  sp->dt_0        = dt_0;
+  this->step_size   = var_step_size;
+  this->step_id     = var_step_id;
+  this->decellerate = var_decellerate;
+  this->accellerate = var_accellerate;
+  this->dt_0        = var_dt_0;
 
-  return err;
 }
 
 double subdiv_arc (long INFO,

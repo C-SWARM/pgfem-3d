@@ -11,7 +11,8 @@
 #include "sig.h"
 #include "supp.h"
 
-typedef struct {
+class SubdivisionScheme{
+  public:
   int step_size;              /// step size
   int step_id;                /// stepping id with subdivision
   int decellerate;            /// decelleration parameter
@@ -22,28 +23,34 @@ typedef struct {
   int need_to_update_loading; /// if 1, new time step is updated. Need to update loads too,
                               /// in order to increase loads based on the new time step size
   double loading_factor;      /// loading increments factor
-} SUBDIVISION_PARAM;
-
-/// subdevide time step size
-///
-/// \param[in] was_NR_ok if 1, previous iteration was successful
-/// \param[in, out] sp container of subdivision parameters
-/// \param[in, out] dt time step size, new value will be updated
-/// \param[in, out] times time at t(tim-1), t(tim), and t(tim+1), times[tim] will be updated
-/// \param[in] tim time step id
-/// \param[in] iter number of iteration taken in the iterative solver
-/// \param[in] maximum number of iteration defined in the iterative solver
-/// \param[in] alpha physics based evolution parameters
-/// \return non-zero on internal error
-int subdivision_scheme(int was_NR_ok,
-                       SUBDIVISION_PARAM *sp,
-                       double *dt,
-                       double *times,
-                       long tim,
-                       int iter,
-                       int max_iter,
-                       double alpha,
-                       const pgfem3d::CommunicationStructure *com);
+  bool no_subdivision_limits; /// if ture: no limit of subdivisions
+                              /// default is false. There is a limit
+                              
+  const int max_subdivision_allowed = 10000;   /// maximum number of subdivision allowed
+  const int min_dt_allowed          = 1.0e-15; /// minimun time step size allowed in the subdivision scheme 
+  
+  SubdivisionScheme(){
+    no_subdivision_limits = false;    
+    step_id = decellerate = accellerate = 0;
+    step_size = 1;
+    dt_0 = 0.0;
+  }
+  SubdivisionScheme(const bool subdivision_limit){
+    no_subdivision_limits = subdivision_limit;
+    step_id = decellerate = accellerate = 0;
+    step_size = 1;
+    dt_0 = 0.0;    
+  }
+  /// subdevide time step size
+  void do_subdivision(int was_NR_ok,
+                      double *dt,
+                      double *times,
+                      long tim,
+                      int iter,
+                      int max_iter,
+                      double alpha,
+                      const pgfem3d::CommunicationStructure *com);
+};
 
 double subdiv_arc (long INFO,
                    double *dt,

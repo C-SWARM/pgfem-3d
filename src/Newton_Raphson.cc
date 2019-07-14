@@ -318,7 +318,7 @@ int reset_variables_for_NR(Grid *grid,
 
 /// When time step is subdivided, loading should be subdivided too.
 /// this function updates loading values when it is needed according to
-/// the subdivision history. SUBDIVISION_PARAM contains information
+/// the subdivision history. SubdivisionScheme contains information
 /// when the load needs to be updated.
 ///
 /// \param[in] sp container of parameters for subdivision
@@ -328,7 +328,7 @@ int reset_variables_for_NR(Grid *grid,
 /// \param[in, out] R nodal force
 /// \param[in] ndofd number of degree of freedom in the domain
 /// \return non-zero on internal error
-int update_load_increments_for_subdivision(const SUBDIVISION_PARAM *sp,
+int update_load_increments_for_subdivision(const SubdivisionScheme *sp,
                                            double *sup_defl,
                                            const int npd,
                                            double *RRn,
@@ -357,7 +357,7 @@ int update_load_increments_for_subdivision(const SUBDIVISION_PARAM *sp,
 
 /// Overloaded aboved function which uses vector<double> types in argument
 /// instead of pointers
-int update_load_increments_for_subdivision(const SUBDIVISION_PARAM *sp,
+int update_load_increments_for_subdivision(const SubdivisionScheme *sp,
                                            vector<double>& sup_defl,
                                            const int npd,
                                            vector<double>& RRn,
@@ -1435,7 +1435,6 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
 
   int myrank = com->rank;
   long tim = NR_t->tim;
-  SUBDIVISION_PARAM sp;
 
   if(myrank==0)
     PGFEM_printf(":: t(n) = %e, dts = (%e %e)\n", NR_t->times[tim], NR_t->dt[DT_N], NR_t->dt[DT_NP1]);
@@ -1473,9 +1472,8 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
   sol->n_step = 0;
 
   /* SUBDIVISION */
-  sp.step_id = sp.decellerate = sp.accellerate = INFO = ART = 0;
-  sp.step_size = 1;
-  sp.dt_0 = 0.0;
+  SubdivisionScheme sp(opts->solution_scheme_opt[NO_SUBDIVISION_LIMITS]);  
+  INFO = ART = 0;
 
   fflush(PGFEM_stdout);
 
@@ -1498,7 +1496,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
     else
     {
       // run subdivision
-      subdivision_scheme(INFO,&sp,&dt,NR_t->times,tim,iter,sol->iter_max,*alpha,com);
+      sp.do_subdivision(INFO,&dt,NR_t->times,tim,iter,sol->iter_max,*alpha,com);
 
       // update variables according to the subdivision
       if(sp.reset_variables)
@@ -2753,11 +2751,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
       }
     } //end mp.physicsno loop
   
-    SUBDIVISION_PARAM sp;
-    sp.step_id = sp.decellerate = sp.accellerate = 0;
-    sp.step_size = 1;
-    sp.dt_0 = 0.0;
-  
+    SubdivisionScheme sp(opts->solution_scheme_opt[NO_SUBDIVISION_LIMITS]);  
     int INFO = 0; // if INF0 == 0, no error detected
                   // if INFO > 0 , error detected
   
@@ -2768,7 +2762,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
     while(1)
     {
       // run subdivision
-      subdivision_scheme(INFO,&sp,NR_t.dt + DT_NP1,NR_t.times,NR_t.tim,iterno,iter_max,alpha,COM);
+      sp.do_subdivision(INFO,NR_t.dt + DT_NP1,NR_t.times,NR_t.tim,iterno,iter_max,alpha,COM);
   
       for(int ia=0; ia<mp.physicsno; ia++){
         update_load_increments_for_subdivision(&sp,sup_defl[ia],(load->sups[ia])->npd,RRn[ia],R[ia],FV[ia].ndofd);
