@@ -1121,15 +1121,27 @@ int single_scale_main(int argc,char *argv[])
 
     ///////////////////////////////////////////////////////////////////
     // start time stepping
+    // If the run is for the solution recorvery, solutions read from the 
+    // restart files are used to re-write the output files at t(n) such that 
+    // tim stays restart number. If NR (Newton Raphson) scheme runs 
+    // for finding solutions at t(n+1), tim increases by 1.
     ///////////////////////////////////////////////////////////////////
+    int tim_forward = options.restart + 1;
+    if(options.solution_scheme_opt[SOLUTION_RECOVERY])
+      tim_forward = options.restart;
+      
     while (time_steps.nt > tim)
     {
       double time_step_start = CLOCK();
 
-      if(tim>options.restart)
-      {
+      if(tim > tim_forward-1){
+        
         time_steps.tim    = tim;
-        time_steps.dt_n   = time_steps.dt_np1;
+        if(options.solution_scheme_opt[SOLUTION_RECOVERY]){ // solution recovery saves results with
+          time_steps.dt_n   = tnm1[1] - tnm1[0];            // time step size at t(n) that isn't updated.
+        } else{
+          time_steps.dt_n   = time_steps.dt_np1;            // update dt at t(n) to t(n+1) for next time stepping
+        }
         time_steps.dt_np1 = time_steps.times[tim+1] - time_steps.times[tim];
         if(time_steps.dt_np1 <= 0.0)
         {
@@ -1145,7 +1157,7 @@ int single_scale_main(int argc,char *argv[])
         }
       }
 
-      if(tim==options.restart+1){
+      if(tim==tim_forward){
         for(int ia=0; ia<mp.physicsno; ia++){
           //  NODE (PRESCRIBED DEFLECTION)- SUPPORT COORDINATES generation
           // of the load vector
@@ -1178,7 +1190,7 @@ int single_scale_main(int argc,char *argv[])
         // add load increments util time reaches the restart point
         //----------------------------------------------------------------------
         //---->
-        if(tim<options.restart+1)
+        if(tim<tim_forward)
         {
           for(int ia=0; ia<mp.physicsno; ia++)
           {
@@ -1195,7 +1207,8 @@ int single_scale_main(int argc,char *argv[])
         for(int ia=0; ia<mp.physicsno; ia++)
           sol[ia].n_step = 0;
 
-        if(tim==options.restart+1 && tnm1[1]>0)
+        if((tim==tim_forward && tnm1[1]>0)&&
+           (options.solution_scheme_opt[SOLUTION_RECOVERY]==false))
         {
           time_steps.times[tim-1] = tnm1[1]; // tnm1[0] = times[tim-2]
                                              // tnm1[1] = times[tim-1]
@@ -1211,10 +1224,13 @@ int single_scale_main(int argc,char *argv[])
         //----------------------------------------------------------------------
         //---->
         fflush(PGFEM_stdout);
-
-        Multiphysics_Newton_Raphson(hypre_time, stiffmat_time, residuals_time, &grid,
-                                    &mat, fv.data(), sol.data(), &load, com.data(),
-                                    &time_steps, crpl, VVolume, &options, mp);
+        
+        if(options.solution_scheme_opt[SOLUTION_RECOVERY]==false){
+          // solution recorvery doesn't need to find new solutions
+          Multiphysics_Newton_Raphson(hypre_time, stiffmat_time, residuals_time, &grid,
+                                      &mat, fv.data(), sol.data(), &load, com.data(),
+                                      &time_steps, crpl, VVolume, &options, mp);
+        }
 
         for(int ia = 0; ia<mp.physicsno; ia++)
         {
@@ -1298,9 +1314,11 @@ int single_scale_main(int argc,char *argv[])
       err += print_results(&grid, &mat, fv.data(), sol.data(), &load,
                            com.data(), &time_steps, crpl, ensight, pmr,
                            oVolume, VVolume, &options, mp, tim, myrank);
-
-      err += write_restart_files(&grid, fv.data(), &load, &time_steps, &options,
-                                 mp, tim, com0, time_step_start, total_time);
+      
+      if(options.solution_scheme_opt[SOLUTION_RECOVERY]==false){
+        err += write_restart_files(&grid, fv.data(), &load, &time_steps, &options,
+                                   mp, tim, com0, time_step_start, total_time);
+      }
 
       if (myrank == 0){
         total_EXA_metric += perTimestep_EXA_metric;    //accumulate the numerator for the EXA metric equation per timestep
@@ -1308,7 +1326,10 @@ int single_scale_main(int argc,char *argv[])
         PGFEM_printf("*********************************************\n");
         PGFEM_printf("*********************************************\n");
       }
-
+      
+      if(options.solution_scheme_opt[SOLUTION_RECOVERY])
+        break;
+        
       tim++;
     }/* end while */
 

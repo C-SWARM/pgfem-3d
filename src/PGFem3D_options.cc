@@ -105,7 +105,8 @@ const Option solver_opts[] = {
   {{"noLS",no_argument,NULL,3},"\tNo use line search, default = Yes",0},
   {{"at",no_argument,NULL,3},"\tUse adaptive time stepping, default = No",0},
   {{"noCCE",no_argument,NULL,3},"\tNo converge check on energy norm, default = Yes",0},
-  {{"noSBDVLimits",no_argument,NULL,3},"No subdivision limits, default = No",0}  
+  {{"noSBDVLimits",no_argument,NULL,3},"No subdivision limits, default = No",0},
+  {{"solRecovery",no_argument,NULL,3},"Solution recovery mode, default = No",0}
 };
 
 const Option precond_opts[] = {
@@ -206,10 +207,11 @@ void set_default_options(PGFem3D_opt *options)
   options->precond = PRECOND_EUCLID;
   options->kdim = 500;
   options->maxit = 1000;
-  options->solution_scheme_opt[LINE_SEARCH]              = 1;
-  options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING]   = 0;
-  options->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM] = 1;
+  options->solution_scheme_opt[LINE_SEARCH]              = true;
+  options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING]   = false;
+  options->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM] = true;
   options->solution_scheme_opt[NO_SUBDIVISION_LIMITS]    = false;
+  options->solution_scheme_opt[SOLUTION_RECOVERY]        = false;
 
   /* analysis options */
   options->analysis_type = -1;
@@ -265,52 +267,57 @@ void print_options(FILE *out, const PGFem3D_opt *options)
   PGFEM_fprintf(out,"Preconditioner: %d\n", options->precond);
   PGFEM_fprintf(out,"Kdim:           %d\n", options->kdim);
   PGFEM_fprintf(out,"Max It:         %d\n", options->maxit);
-  if(options->solution_scheme_opt[LINE_SEARCH])
-    PGFEM_fprintf(out,"LINE SEARCH is enabled\n");
-  else
-    PGFEM_fprintf(out,"LINE SEARCH is disabled\n");
+  
+  if(options->solution_scheme_opt[SOLUTION_RECOVERY]){
+    PGFEM_fprintf(out,"Recover solutions from restart files\n");
+  } else{
+    if(options->solution_scheme_opt[LINE_SEARCH])
+      PGFEM_fprintf(out,"LINE SEARCH is enabled\n");
+    else
+      PGFEM_fprintf(out,"LINE SEARCH is disabled\n");
+  
+    if(options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING])
+      PGFEM_fprintf(out,"ADAPTIVE TIME STEPPING is enabled\n");
+    else
+      PGFEM_fprintf(out,"ADAPTIVE TIME STEPPING is disabled\n");
+  
+    if(options->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM])
+      PGFEM_fprintf(out,"EXIT WITH ENERGY NORM IS CONVERGED is enabled\n");
+    else
+      PGFEM_fprintf(out,"EXIT WITH ENERGY NORM IS CONVERGED is disabled\n");
+      
+    if(options->solution_scheme_opt[NO_SUBDIVISION_LIMITS])
+      PGFEM_fprintf(out,"No limits in the subdivision scheme\n");
+    else
+      PGFEM_fprintf(out,"EXIT on reaching maximum subdivision limits\n");
 
-  if(options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING])
-    PGFEM_fprintf(out,"ADAPTIVE TIME STEPPING is enabled\n");
-  else
-    PGFEM_fprintf(out,"ADAPTIVE TIME STEPPING is disabled\n");
-
-  if(options->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM])
-    PGFEM_fprintf(out,"EXIT WITH ENERGY NORM IS CONVERGED is enabled\n");
-  else
-    PGFEM_fprintf(out,"EXIT WITH ENERGY NORM IS CONVERGED is disabled\n");
-    
-  if(options->solution_scheme_opt[NO_SUBDIVISION_LIMITS])
-    PGFEM_fprintf(out,"No limits in the subdivision scheme\n");
-  else
-    PGFEM_fprintf(out,"EXIT on reaching maximum subdivision limits\n");
-
-  PGFEM_fprintf(out,"\n=== ANALYSIS OPTIONS ===\n");
-  PGFEM_fprintf(out,"Analysis type:      %d\n",options->analysis_type);
-  PGFEM_fprintf(out,"Stab parameter:     %.12e\n",options->stab);
-  PGFEM_fprintf(out,"Cohesive elems:     %d\n",options->cohesive);
-  PGFEM_fprintf(out,"Multi-scale:        %d\n",options->multi_scale);
-  PGFEM_fprintf(out,"Constitutive Model: %d\n",options->cm);
-
-  PGFEM_fprintf(out,"\n=== VISUALIZATION OPTIONS ===\n");
-  PGFEM_fprintf(out,"Visualization:  %d\n",options->vis_format);
-  PGFEM_fprintf(out,"Smoothing:      %d\n",options->smoothing);
-
-  PGFEM_fprintf(out,"\n=== OTHER OPTIONS ===\n");
-  PGFEM_fprintf(out,"Periodic:       %d\n",options->periodic);
-  PGFEM_fprintf(out,"Renumber:       %d\n",options->renumber);
-  PGFEM_fprintf(out,"Legacy format:  %d\n",options->legacy);
-  PGFEM_fprintf(out,"Debug:          %d\n",options->debug);
-  PGFEM_fprintf(out,"Restart:        %d\n",options->restart);
-  PGFEM_fprintf(out,"Walltime:       %f[s]\n", options->walltime);
-  PGFEM_fprintf(out,"Network:        %d\n",options->network);
-  PGFEM_fprintf(out,"Exascale:        %d\n",options->print_EXA);
-
-  PGFEM_fprintf(out,"\n=== FILE OPTIONS ===\n");
-  PGFEM_fprintf(out,"IPath:          %s\n",options->ipath);
-  PGFEM_fprintf(out,"OPath:          %s\n",options->opath);
-  PGFEM_fprintf(out,"Input: %s\n",options->ifname);
-  PGFEM_fprintf(out,"Output: %s\n",options->ofname);
+    PGFEM_fprintf(out,"\n=== ANALYSIS OPTIONS ===\n");
+    PGFEM_fprintf(out,"Analysis type:      %d\n",options->analysis_type);
+    PGFEM_fprintf(out,"Stab parameter:     %.12e\n",options->stab);
+    PGFEM_fprintf(out,"Cohesive elems:     %d\n",options->cohesive);
+    PGFEM_fprintf(out,"Multi-scale:        %d\n",options->multi_scale);
+    PGFEM_fprintf(out,"Constitutive Model: %d\n",options->cm);
+  
+    PGFEM_fprintf(out,"\n=== VISUALIZATION OPTIONS ===\n");
+    PGFEM_fprintf(out,"Visualization:  %d\n",options->vis_format);
+    PGFEM_fprintf(out,"Smoothing:      %d\n",options->smoothing);
+  
+    PGFEM_fprintf(out,"\n=== OTHER OPTIONS ===\n");
+    PGFEM_fprintf(out,"Periodic:       %d\n",options->periodic);
+    PGFEM_fprintf(out,"Renumber:       %d\n",options->renumber);
+    PGFEM_fprintf(out,"Legacy format:  %d\n",options->legacy);
+    PGFEM_fprintf(out,"Debug:          %d\n",options->debug);
+    PGFEM_fprintf(out,"Restart:        %d\n",options->restart);
+    PGFEM_fprintf(out,"Walltime:       %f[s]\n", options->walltime);
+    PGFEM_fprintf(out,"Network:        %d\n",options->network);
+    PGFEM_fprintf(out,"Exascale:        %d\n",options->print_EXA);
+  
+    PGFEM_fprintf(out,"\n=== FILE OPTIONS ===\n");
+    PGFEM_fprintf(out,"IPath:          %s\n",options->ipath);
+    PGFEM_fprintf(out,"OPath:          %s\n",options->opath);
+    PGFEM_fprintf(out,"Input: %s\n",options->ifname);
+    PGFEM_fprintf(out,"Output: %s\n",options->ofname);
+  }
 
   PGFEM_fprintf(out,"\n");
 }
@@ -599,17 +606,20 @@ void re_parse_command_line(const int myrank,
         options->maxit = strtol(optarg, nullptr, 10);
       }
       else if (strcmp("noLS", opts[opts_idx].name) == 0) {
-        options->solution_scheme_opt[LINE_SEARCH] = 0;
+        options->solution_scheme_opt[LINE_SEARCH] = false;
       }
       else if (strcmp("at", opts[opts_idx].name) == 0) {
-        options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING] = 1;
+        options->solution_scheme_opt[ADAPTIVE_TIME_STEPPING] = true;
       }
       else if (strcmp("noCCE", opts[opts_idx].name) == 0) {
-        options->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM] = 0;
+        options->solution_scheme_opt[CVG_CHECK_ON_ENERGY_NORM] = false;
       }
       else if (strcmp("noSBDVLimits", opts[opts_idx].name) == 0) {
         options->solution_scheme_opt[NO_SUBDIVISION_LIMITS] = true;
-      }      
+      }
+      else if (strcmp("solRecovery", opts[opts_idx].name) == 0) {
+        options->solution_scheme_opt[SOLUTION_RECOVERY] = true;
+      }
       break;
 
       /* PRECOND OPTIONS */

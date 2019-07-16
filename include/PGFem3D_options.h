@@ -18,7 +18,7 @@ struct PGFem3D_opt {
   int precond;
   int kdim;
   int maxit;
-  int solution_scheme_opt[SOLUTION_SCHEME_OPT_NO]; // set numerical solutions scheme options
+  bool solution_scheme_opt[SOLUTION_SCHEME_OPT_NO] = {}; // set numerical solutions scheme options
   // solution_scheme_opt[0]: for line search
   // solution_scheme_opt[1]: for adaptive time stepping
   // solution_scheme_opt[2]: check convergence on energy norm
