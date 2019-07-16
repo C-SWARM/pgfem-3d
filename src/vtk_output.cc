@@ -1036,6 +1036,7 @@ int VTK_write_mesh(Grid *grid,
 /// \param[in] datano number data(vaialbes) to be written
 /// \param[in] opts structure PGFem3D option
 /// \param[in] time time step number
+/// \param[in] dt   time step size
 /// \param[in] myrank current process rank
 /// \return non-zero on internal error
 int VTK_write_multiphysics_vtu(Grid *grid,
@@ -1046,6 +1047,7 @@ int VTK_write_multiphysics_vtu(Grid *grid,
                                int datano,
                                const PGFem3D_opt *opts,
                                int time,
+                               const double dt,
                                int myrank)
 {
   int err = 0;
@@ -1066,7 +1068,7 @@ int VTK_write_multiphysics_vtu(Grid *grid,
   for(int ia=0; ia<datano; ia++)
   {
     if(pD[ia].is_point_data == 1) // point data
-      err += pD[ia].write_vtk(out,grid,mat,FV,load,pD+ia,opts);
+      err += pD[ia].write_vtk(out,grid,mat,FV,load,pD+ia,dt,opts);
   }
   PGFEM_fprintf(out,"</PointData>\n");
 
@@ -1074,7 +1076,7 @@ int VTK_write_multiphysics_vtu(Grid *grid,
   for(int ia=0; ia<datano; ia++)
   {
     if(pD[ia].is_point_data == 0) // Cell data
-      err += pD[ia].write_vtk(out,grid,mat,FV,load,pD+ia,opts);
+      err += pD[ia].write_vtk(out,grid,mat,FV,load,pD+ia,dt,opts);
   }
   
   VTK_CellProperty(grid, out);
@@ -1111,6 +1113,7 @@ int VTK_write_data_double(FILE *out,
                           FieldVariables *FV,
                           LoadingSteps *load,
                           PRINT_MULTIPHYSICS_RESULT *pmr,
+                          const double dt,
                           const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1145,6 +1148,7 @@ int VTK_write_data_MacroDisplacement(FILE *out,
                                      FieldVariables *FV,
                                      LoadingSteps *load,
                                      PRINT_MULTIPHYSICS_RESULT *pmr,
+                                     const double dt,
                                      const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1176,6 +1180,7 @@ int VTK_write_data_MacroDisplacement(FILE *out,
 /// \param[in] FV array of field variables
 /// \param[in] load object for loading
 /// \param[in] pmr a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
+/// \param[in] dt  time step size
 /// \param[in] opts structure PGFem3D option
 /// \return non-zero on internal error
 int VTK_write_data_Nodal_pressure(FILE *out,
@@ -1184,6 +1189,7 @@ int VTK_write_data_Nodal_pressure(FILE *out,
                                   FieldVariables *FV,
                                   LoadingSteps *load,
                                   PRINT_MULTIPHYSICS_RESULT *pmr,
+                                  const double dt,
                                   const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1228,6 +1234,7 @@ int VTK_write_data_CauchyStress(FILE *out,
                                 FieldVariables *FV,
                                 LoadingSteps *load,
                                 PRINT_MULTIPHYSICS_RESULT *pmr,
+                                const double dt,
                                 const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1263,6 +1270,7 @@ int VTK_write_data_EulerStrain(FILE *out,
                                FieldVariables *FV,
                                LoadingSteps *load,
                                PRINT_MULTIPHYSICS_RESULT *pmr,
+                               const double dt,
                                const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1298,6 +1306,7 @@ int VTK_write_data_EffectiveStrain(FILE *out,
                                    FieldVariables *FV,
                                    LoadingSteps *load,
                                    PRINT_MULTIPHYSICS_RESULT *pmr,
+                                   const double dt,
                                    const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1330,6 +1339,7 @@ int VTK_write_data_EffectiveStress(FILE *out,
                                    FieldVariables *FV,
                                    LoadingSteps *load,
                                    PRINT_MULTIPHYSICS_RESULT *pmr,
+                                   const double dt,
                                    const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1361,6 +1371,7 @@ int VTK_write_data_CellProperty(FILE *out,
                                 FieldVariables *FV,
                                 LoadingSteps *load,
                                 PRINT_MULTIPHYSICS_RESULT *pmr,
+                                const double dt,
                                 const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1392,6 +1403,7 @@ int VTK_write_data_Damage(FILE *out,
                           FieldVariables *FV,
                           LoadingSteps *load,
                           PRINT_MULTIPHYSICS_RESULT *pmr,
+                          const double dt,
                           const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1453,6 +1465,7 @@ int VTK_write_data_Softening(FILE *out,
                              FieldVariables *FV,
                              LoadingSteps *load,
                              PRINT_MULTIPHYSICS_RESULT *pmr,
+                             const double dt,
                              const PGFem3D_opt *opts){
   int err = 0;
   int total_Lagrangian = 1;
@@ -1508,6 +1521,7 @@ int VTK_write_data_plastic_hardening(FILE *out,
                                      FieldVariables *FV,
                                      LoadingSteps *load,
                                      PRINT_MULTIPHYSICS_RESULT *pmr,
+                                     const double dt,
                                      const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1563,6 +1577,7 @@ int VTK_write_data_pF(FILE *out,
                       FieldVariables *FV,
                       LoadingSteps *load,
                       PRINT_MULTIPHYSICS_RESULT *pmr,
+                      const double dt,
                       const PGFem3D_opt *opts){
   int err = 0;
   int total_Lagrangian = 1;
@@ -1622,6 +1637,7 @@ int VTK_write_data_eq_plastic_strain(FILE *out,
                                      FieldVariables *FV,
                                      LoadingSteps *load,
                                      PRINT_MULTIPHYSICS_RESULT *pmr,
+                                     const double dt,
                                      const PGFem3D_opt *opts){
   int err = 0;
   int total_Lagrangian = 1;
@@ -1647,7 +1663,7 @@ int VTK_write_data_eq_plastic_strain(FILE *out,
         double l_ip = {};    
         err += m->param->get_plast_strain_var(m, &l_ip);
 
-        l += l_ip*fe.detJxW;
+        l += dt*l_ip*fe.detJxW;
         V += fe.detJxW;
       }
       l/=V;
@@ -1677,6 +1693,7 @@ int VTK_write_data_F(FILE *out,
                      FieldVariables *FV,
                      LoadingSteps *load,
                      PRINT_MULTIPHYSICS_RESULT *pmr,
+                     const double dt,
                      const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1712,6 +1729,7 @@ int VTK_write_data_P(FILE *out,
                      FieldVariables *FV,
                      LoadingSteps *load,
                      PRINT_MULTIPHYSICS_RESULT *pmr,
+                     const double dt,
                      const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1765,6 +1783,7 @@ int VTK_write_data_W(FILE *out,
                      FieldVariables *FV,
                      LoadingSteps *load,
                      PRINT_MULTIPHYSICS_RESULT *pmr,
+                     const double dt,
                      const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1799,6 +1818,7 @@ int VTK_write_data_ElementPressure(FILE *out,
                                    FieldVariables *FV,
                                    LoadingSteps *load,
                                    PRINT_MULTIPHYSICS_RESULT *pmr,
+                                   const double dt,
                                    const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1834,6 +1854,7 @@ int VTK_write_data_ElementVolume(FILE *out,
                                  FieldVariables *FV,
                                  LoadingSteps *load,
                                  PRINT_MULTIPHYSICS_RESULT *pmr,
+                                 const double dt,
                                  const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1864,6 +1885,7 @@ int VTK_write_data_Density(FILE *out,
                            FieldVariables *FV,
                            LoadingSteps *load,
                            PRINT_MULTIPHYSICS_RESULT *pmr,
+                           const double dt,
                            const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1914,6 +1936,7 @@ int VTK_write_data_HydrostaticStress(FILE *out,
                                      FieldVariables *FV,
                                      LoadingSteps *load,
                                      PRINT_MULTIPHYSICS_RESULT *pmr,
+                                     const double dt,
                                      const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1951,6 +1974,7 @@ int VTK_write_data_PrincipalStress(FILE *out,
                                    FieldVariables *FV,
                                    LoadingSteps *load,
                                    PRINT_MULTIPHYSICS_RESULT *pmr,
+                                   const double dt,
                                    const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -1999,6 +2023,7 @@ int VTK_write_data_HeatFlux(FILE *out,
                             FieldVariables *FV,
                             LoadingSteps *load,
                             PRINT_MULTIPHYSICS_RESULT *pmr,
+                            const double dt,
                             const PGFem3D_opt *opts)
 {
   int err = 0;
@@ -2032,6 +2057,7 @@ int VTK_write_data_HeatGeneration(FILE *out,
                                   FieldVariables *FV,
                                   LoadingSteps *load,
                                   PRINT_MULTIPHYSICS_RESULT *pmr,
+                                  const double dt,
                                   const PGFem3D_opt *opts)
 {
   int err = 0;

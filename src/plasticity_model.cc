@@ -1457,7 +1457,7 @@ int plasticity_model_set_orientations(EPS *eps,
                                       const Element *elem,
                                       const int n_mat,
                                       const HOMMAT *hmat_list,
-				      int myrank)
+                                      int myrank)
 {
   int err = 0;
   int crystal_plasticity_included = 0;
@@ -1793,3 +1793,34 @@ const
   }  
   return 0;
 }
+
+/// compute effective plastic strain rate (sqrt(2/3 pD:pD)) which can be used to compute
+/// effective plastic strain: int_{t(n}}_{t(n+1)} sqrt(2/3 pD:pD) dt
+///
+/// \param[in]  m                 constitutive model object
+/// \param[out] eff_p_strain_rate sqrt(2/3 pD:pD)
+/// \return     non-zero on error.
+int
+CP_PARAM::get_plast_strain_var(const Constitutive_model *m,
+                               double *eff_p_strain_rate) const {
+  int err = 0;
+
+  *eff_p_strain_rate = 0.0;
+  
+  Tensor<2> pL = {};
+
+  SLIP_SYSTEM *slip = (((m->param)->cm_mat)->mat_p)->slip;
+  Matrix<double> *Fs = (m->vars_list[0][m->model_id]).Fs;
+
+  for(int ia=0; ia<slip->N_SYS; ++ia){
+    const Tensor<2, const double*> Pa(slip->p_sys + DIM_3x3 * ia);
+    pL(i,j) += fabs(Fs[TENSOR_gamma_dot].m_pdata[ia])*Pa(i,j);
+  }
+  
+  Tensor<2> pD;
+  
+  pD(i,j) = 0.5*(pL(i,j) + pL(j,i));
+  *eff_p_strain_rate = sqrt(2.0/3.0*pD(i,j)*pD(i,j));
+  return err;
+}
+ 

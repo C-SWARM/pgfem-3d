@@ -831,3 +831,40 @@ int CM_PVP_PARAM::model_dependent_finalization(void)
   delete this->pvp_elast;
   return err;
 }
+
+/// compute effective plastic strain rate (sqrt(2/3 pD:pD)) which can be used to compute
+/// effective plastic strain: int_{t(n}}_{t(n+1)} sqrt(2/3 pD:pD) dt
+///
+/// \param[in]  m                 constitutive model object
+/// \param[out] eff_p_strain_rate sqrt(2/3 pD:pD)
+/// \return     non-zero on error.
+int 
+CM_PVP_PARAM::get_plast_strain_var(const Constitutive_model *m,
+                                   double *eff_p_strain_rate) const {
+  int err = 0;
+
+  *eff_p_strain_rate = 0.0;
+
+  Matrix<double> *Fs = m->vars_list[0][m->model_id].Fs;
+  double *state_var = m->vars_list[0][m->model_id].state_vars[0].m_pdata;
+  GcmSolverInfo *solver_info = m->param->gcm_solver_info;
+
+  MaterialPoroViscoPlasticity *mat_pvp = this->cm_mat->mat_pvp;
+
+  Tensor<2> pL = {};  
+  err += poro_visco_plasticity_plastic_velocity_gradient(pL.data, mat_pvp, solver_info,
+                                                         Fs[TENSOR_Fnp1 ].m_pdata,
+                                                         Fs[TENSOR_Fn   ].m_pdata,
+                                                         Fs[TENSOR_pFnp1].m_pdata,
+                                                         Fs[TENSOR_pFn  ].m_pdata,
+                                                         state_var[VAR_pc_np1],
+                                                         state_var[VAR_pc_n]);
+
+  Tensor<2> pD;
+  
+  pD(i,j) = 0.5*(pL(i,j) + pL(j,i));
+  *eff_p_strain_rate = sqrt(2.0/3.0*pD(i,j)*pD(i,j));
+  
+  return err;
+}
+ 

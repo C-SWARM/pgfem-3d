@@ -80,12 +80,5 @@ int cm_no_subdiv(const Constitutive_model *m,
 int cm_get_eq_plastic_strain(const Constitutive_model *m,
                              double *eq)
 {
-  int err = 0;
-  Tensor<2> Fp = {};
-
-  // get the plastic deformation gradient at (n)
-  m->param->get_pF(m, Fp.data,1);
-
-  *eq = compute_Equivalent_strain(Fp.data);
-  return err;
+  return 0.0;
 }

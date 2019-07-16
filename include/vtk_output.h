@@ -142,6 +142,7 @@ typedef int (*write_vtk_t) (FILE *out,
                             FieldVariables *fv,
                             LoadingSteps *load,
                             PRINT_MULTIPHYSICS_RESULT *pmr,
+                            const double dt,
                             const PGFem3D_opt *opts);
 
 /// print output variables for multiphysics problems
@@ -184,17 +185,6 @@ int VTK_write_multiphysics_master(PRINT_MULTIPHYSICS_RESULT *pD,
                                   int nproc);
 
 /// write simulation results in vtk format based on physics
-///
-/// \param[in] grid an object containing all mesh data
-/// \param[in] mat a material object
-/// \param[in] FV array of field variables
-/// \param[in] load object for loading
-/// \param[in] pD a PRINT_MULTIPHYSICS_RESULT struct for writing results based on physics
-/// \param[in] datano number data(vaialbes) to be written
-/// \param[in] opts structure PGFem3D option
-/// \param[in] time time step number
-/// \param[in] myrank current process rank
-/// \return non-zero on internal error
 int VTK_write_multiphysics_vtu(Grid *grid,
                                const MaterialProperty *mat,
                                FieldVariables *FV,
@@ -203,6 +193,7 @@ int VTK_write_multiphysics_vtu(Grid *grid,
                                int datano,
                                const PGFem3D_opt *opts,
                                int time,
+                               const double dt,
                                int myrank);
 
 /// construct PRINT_MULTIPHYSICS_RESULT array based on physics
