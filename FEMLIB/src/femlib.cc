@@ -1301,7 +1301,7 @@ void compute_deformation_gradient(const int nne,
   Matrix<double> r_e; // memory will be allocated if pF0I is not NULL 
 
   if(pF0I!=NULL){
-    r_e.initialization(nne, 1, 0.0);
+    r_e.initialization(nne*nsd, 1, 0.0);
     for(int ia=0; ia<nne; ++ia){
       for(int ib=0; ib<nsd; ++ib)
         r_e.m_pdata[ia*nsd+ib] = u[ia*nsd+ib] + u0(ia,ib);
