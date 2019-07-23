@@ -2340,7 +2340,8 @@ int stiffness_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
     else
       err += inv(pFnpa, M_npa);
 
-    eFnpa = Fr_npa(i,k)*M_npa(k,j);
+    double tJnpa = det(Fr_npa);
+    eFnpa = pow(theta_npa/tJnpa, 1.0/3.0)*Fr_npa(i,k)*M_npa(k,j);
 
     int npa = 1;
     CM_Ctx cm_ctx;
@@ -3154,9 +3155,11 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
       err += inv(pFnma, M_nma);
     }
 
-    eFnpa = Fr_npa(i,k)*M_npa(k,j);
-    eFnma = Fr_nma(i,k)*M_nma(k,j);
-
+    double tJnpa = det(Fr_npa);
+    double tJnma = det(Fr_nma);    
+    eFnpa = pow(theta_npa/tJnpa, 1.0/3.0)*Fr_npa(i,k)*M_npa(k,j);
+    eFnma = pow(theta_nma/tJnma, 1.0/3.0)*Fr_nma(i,k)*M_nma(k,j);
+    
     int npa = 1;
     CM_Ctx cm_ctx;
     cm_ctx.set_tensors(Fnp1.data,eFnpa.data,hFn.data,hFnp1.data,is_it_couple_w_thermal>=0);
