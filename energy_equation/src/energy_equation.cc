@@ -514,7 +514,7 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
   double Jn = 1.0; // Total Lagrangian = 1.0; // it is updated if mechanical is coupled.
 
   int eid = fe->curt_elem_id;
-  const int mat_id = (grid->element[eid]).mat[0];
+  const int mat_id = (grid->element[eid]).mat[2];
   double rho_0 = mat->density[mat_id];
 
   int is_it_couple_w_mechanical  = -1;
@@ -786,7 +786,7 @@ int energy_equation_compute_stiffness_elem(FEMLIB *fe,
   int eid = fe->curt_elem_id;
   double Jn = 1.0; // Total Lagrangian = 1.0; // it is updated if mechanical is coupled.
 
-  const int mat_id = (grid->element[eid]).mat[0];
+  const int mat_id = (grid->element[eid]).mat[2];
   double rho_0 = mat->density[mat_id];
 
   int is_it_couple_w_mechanical  = -1;
@@ -1261,7 +1261,7 @@ int update_thermal_flux4print(Grid *grid,
     memset(eps[eid].el.o,0,6*sizeof(double));
 
     // get material constants (parameters)
-    const int mat_id = (grid->element[eid]).mat[0];
+    const int mat_id = (grid->element[eid]).mat[2];
 
     const MaterialThermal& thermal = mat->thermal[mat_id];
     const Tensor<2,3,const double*> k0 = thermal.k;
