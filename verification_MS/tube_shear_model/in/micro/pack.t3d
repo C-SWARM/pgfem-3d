@@ -1,0 +1,76 @@
+# Create an empty tube running from front surface to back surface
+#
+# Back circle
+vertex 5 xyz -0.5 0.0  0.2
+vertex 6 xyz -0.5 0.0 -0.2
+curve 10 order 4 vertex 5 6
+polygon 1 xyz -0.5 -0.4  0.2 weight 0.3333333333
+polygon 2 xyz -0.5 -0.4 -0.2 weight 0.3333333333
+curve 11 order 4 vertex 5 6
+polygon 1 xyz -0.5 0.4  0.2 weight 0.3333333333
+polygon 2 xyz -0.5 0.4 -0.2 weight 0.3333333333
+
+# Front circle
+vertex 7 xyz 0.5 0.0  0.2
+vertex 8 xyz 0.5 0.0 -0.2
+curve 12 order 4 vertex 7 8
+polygon 1 xyz 0.5 -0.4  0.2 weight 0.3333333333
+polygon 2 xyz 0.5 -0.4 -0.2 weight 0.3333333333
+curve 13 order 4 vertex 7 8
+polygon 1 xyz 0.5 0.4  0.2 weight 0.3333333333
+polygon 2 xyz 0.5 0.4 -0.2 weight 0.3333333333
+
+# line connecting 2 cicles
+curve 14 vertex 5 7
+curve 15 vertex 8 6
+
+# surfaces in hole tube
+surface 100 order 4 4 Curve 10 15 12 14
+polygon 1 1 xyz -0.5  -0.8  0.2 weight 0.1111111111
+polygon 1 2 xyz -0.5  -0.8 -0.2 weight 0.1111111111
+polygon 2 1 xyz  0.5  -0.8 -0.2 weight 0.1111111111
+polygon 2 2 xyz  0.5  -0.8  0.2 weight 0.1111111111
+surface 200 order 4 4 Curve 11 15 13 14
+polygon 1 1 xyz -0.5   0.8  0.2 weight 0.1111111111
+polygon 1 2 xyz -0.5   0.8 -0.2 weight 0.1111111111
+polygon 2 1 xyz  0.5   0.8 -0.2 weight 0.1111111111
+polygon 2 2 xyz  0.5   0.8  0.2 weight 0.1111111111
+
+#patch 1 normal 1 0 0 boundary curve 10 -11 size def
+#patch 2 normal 1 0 0 boundary curve 12 -13 size def
+#region 1 boundary surface -100 200 boundary patch -1 2 size def property 0 hole
+#region 1 boundary surface -100 200 size def property 0 hole
+
+# Boundary Information for box
+vertex 10 xyz 0.5 0.5 0.5
+vertex 11 xyz 0.5 0.5 -0.5
+vertex 12 xyz 0.5 -0.5 0.5
+vertex 13 xyz 0.5 -0.5 -0.5
+vertex 14 xyz -0.5 0.5 0.5
+vertex 15 xyz -0.5 0.5 -0.5
+vertex 16 xyz -0.5 -0.5 0.5
+vertex 17 xyz -0.5 -0.5 -0.5
+curve 16 vertex 10 11
+curve 17 vertex 12 13
+curve 18 vertex 14 15
+curve 19 vertex 16 17
+curve 20 vertex 10 12
+curve 21 vertex 11 13
+curve 22 vertex 14 16
+curve 23 vertex 15 17
+curve 24 vertex 10 14
+curve 25 vertex 11 15
+curve 26 vertex 12 16
+curve 27 vertex 13 17
+
+patch 3 normal 1 0 0 boundary curve -12 13 -16 17 20 -21 size def
+patch 4 normal 0 1 0 boundary curve 16 -18 -24 25 size def
+patch 5 normal 0 0 1 boundary curve -20 22 24 -26 size def
+patch 6 normal 1 0 0 boundary curve -10 11 -18 19 22 -23 mirror 3 size def
+patch 7 normal 0 1 0 boundary curve 17 -19 -26 27 mirror 4 size def
+patch 8 normal 0 0 1 boundary curve -21 23 25 -27 mirror 5 size def
+
+# Matrix Information, all normal directions shoud go inside
+region 2 boundary surface 100 -200 boundary patch 3 -6 4 -7 5 -8 size def property 0
+#region 2 boundary surface -100 200 boundary patch -3 6 -4 7 -5 8 size def property 0
+

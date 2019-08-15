@@ -1,0 +1,12 @@
+{
+    "#": "cohesive data",
+    "number_of_cohesive_potentials": 1,
+
+    "cohesive_potentials": [
+        {
+            "type_of_potential": -1,
+            "phenomenological_potentials": [1.0, 0.25, 1.0, 100.0]
+        }
+    ]
+
+}

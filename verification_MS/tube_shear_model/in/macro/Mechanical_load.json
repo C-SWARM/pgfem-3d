@@ -1,0 +1,11 @@
+{
+  "number_of_loading_steps": 2,
+  "#": "the next 2 are ignored if number_of_loading_steps is 0",
+  "loading_time_steps":[1,2],
+  "loading_increments":
+[
+ [
+   0.2, 0.2
+ ]
+]
+}

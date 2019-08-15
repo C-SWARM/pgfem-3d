@@ -1,0 +1,39 @@
+{
+    "#": "general material data",
+    "number_of_materials": 1,
+    "number_of_volume_fraction": 1,
+    "volume_fraction": [1],   
+    "density": [2.71e-9],
+         
+    "number_of_regions_to_set_material": 3, 
+    "#": "material_regions description: [geometry type][geometry id][material ID 1][material ID 2]",
+    "#": "geometry type description: 1=vertex, 2=curve, 3=surface, 4=region, 5=patch, 7=interface",
+    "material_regions": [
+	[4, 1, 0, 0],
+	[4, 2, 0, 0],
+        [7, 9, 0, 0]
+    ],
+    "number_of_bases": 1,
+    "basis_vectors": [
+      {
+	"e1": [1, 0, 0],
+	"e2": [0, 1, 0],
+	"e3": [0, 0, 1]
+      }
+    ],
+    "materials": [
+	{
+        "name": "1",
+        "ID": 0,
+        "youngs_modulus": [1.0e+3, 1.0e+3, 0.0],
+        "shear_modulus": [1.0e+3, 0.0, 0.0],
+        "poissons_ratio": [0.3, 0.0, 0.0],
+        "coefficient_of_thermal_expansion": [1.0, 1.0, 1.0],
+	"sig": 1.0e+7,
+        "strain_energy_function_dev": 2,
+        "strain_energy_function_vol": 3
+	}
+    ]
+}
+
+

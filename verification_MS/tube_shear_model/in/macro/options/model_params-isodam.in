@@ -1,0 +1,12 @@
+1   # Number of materials listed
+
+0 3 # This corresponds to material 0 with ISO_VISCOUS_DAMAGE model
+    # NOTE: Since material 0 was already specified, *this listing will be ignored*
+{
+  # IVD Parameters are input on a single line in alphabetical order
+  # mu    ome_max [0,1) p1  p2  Yin
+   200.0 1.0           8.0 2.5 0.15
+}
+
+
+

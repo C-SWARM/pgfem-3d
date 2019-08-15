@@ -1,0 +1,14 @@
+1   # Number of materials listed
+
+#0 0 # This corresponds to material 0 with HYPER ELASTICITY model
+#{}
+
+0 3 # This corresponds to material 1 with ISO_VISCOUS_DAMAGE model
+{
+# IVD Parameters are input on a single line in alphabetical order
+# mu    ome_max [0,1) p1  p2  Yin
+  100.0 1.0           8.0 2.5 0.15
+}
+
+
+
