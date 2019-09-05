@@ -19,7 +19,7 @@
 #include <sstream>
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 enum CO_TYPE {
   CO_ELME_BY_ELEM, // set crystal orientation element by element

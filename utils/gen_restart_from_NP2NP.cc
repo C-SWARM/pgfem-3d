@@ -27,7 +27,7 @@
 #include "plasticity_model.h"
 
 using namespace pgfem3d;
-using namespace pgfem3d::net;
+using namespace multiscale::net;
 
 // global restart values
 class GlobalRestartValues{
@@ -528,9 +528,9 @@ void get_options(int argc,
 
 int main(int argc, char *argv[])
 {
-  Boot *boot = new Boot();
+  Boot *boot = gboot = Boot::Create(BOOT_DEFAULT);
   int myrank = boot->get_rank();
-  int nproc = boot->get_nproc();
+  int nproc = boot->get_ranks();
 
   // read options
   PGFem3D_opt options;
@@ -577,7 +577,7 @@ int main(int argc, char *argv[])
 
 
   // Create the desired network
-  Network *net = Network::Create(options);
+  Network *net = multiscale::net::Network::Create(NET_DEFAULT);  
 
 
   CommunicationStructure *com = new CommunicationStructure();
@@ -586,7 +586,7 @@ int main(int argc, char *argv[])
   com->net = net;
   com->comm = NET_COMM_WORLD;
 
-  char processor_name[NET_MAX_PROCESSOR_NAME];
+  char processor_name[MAX_PROCESSOR_NAME];
   int namelen = 0;
   boot->get_processor_name(processor_name, &namelen);
 
