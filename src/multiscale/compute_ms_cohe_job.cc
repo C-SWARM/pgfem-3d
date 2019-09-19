@@ -227,7 +227,7 @@ int compute_ms_cohe_job(const int job_id,
   microscale->net->comm_rank(common->comm,&myrank);
   if(myrank == 0){
     PGFEM_printf("=== Microscale cell %d of %d ===\n",
-                 job_id+1,microscale->idx_map.size);
+                 job_id+1,microscale->idx_map.size-1);
   }
 
   /* switch set up job */
