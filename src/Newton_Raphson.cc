@@ -68,7 +68,7 @@
 #define DEBUG_MULTISCALE_SERVER 1
 #endif
 
-vector<long> perTimestep_EXA_metric;
+vector<long> ODE_EXA_metric;
 vector<long> dof_EXA_metric;
 
 using namespace pgfem3d;
@@ -1268,7 +1268,7 @@ long Newton_Raphson_with_LS(double *solve_time,
           PGFEM_printf ("ODE operations: (%ld)\n", global_ODE_EXA_metric);
           PGFEM_printf ("DoFs (fv->Gndof * IT): %d * %d = %ld\n", fv->Gndof, BS_iter, fv->Gndof * BS_iter);
         }
-        perTimestep_EXA_metric[mp_id] += global_ODE_EXA_metric;          //accumulate exascale metrics per NR iteration
+        ODE_EXA_metric[mp_id] += global_ODE_EXA_metric;          //accumulate exascale metrics per NR iteration
         dof_EXA_metric[mp_id] += fv->Gndof * BS_iter;
       }
     }
@@ -2219,7 +2219,7 @@ int check_convergence_of_NR_staggering(double *residuals_loc_time,
       //EXA metric computation
       if (opts->print_EXA == 2)
         PGFEM_printf ("Convergence ODE operations: (%ld)\n", global_ODE_EXA_metric);
-      perTimestep_EXA_metric[mp_id] += global_ODE_EXA_metric;          //accumulate exascale metrics for the convergence check
+      ODE_EXA_metric[mp_id] += global_ODE_EXA_metric;          //accumulate exascale metrics for the convergence check
     }
     perIter_ODE_EXA_metric = 0;
     

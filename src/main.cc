@@ -156,7 +156,8 @@ int print_PGFem3D_final(const Multiphysics& mp,
 /// \param[in] local_EXA_metric exascale metric counter for total number of integration iterations
 /// \param[in] com Communication Structure
 /// \param[in] myrank current process rank
-void print_EXA_metrics(const int nproc,
+void print_EXA_metrics(const Multiphysics& mp,
+                       const int nproc,
                        const int myrank,
                        std::vector<double> hypre_time,
                        std::vector<double> residuals_time,
@@ -164,42 +165,39 @@ void print_EXA_metrics(const int nproc,
                        const PGFem3D_opt *opts)
 {
   if (myrank == 0){
-  /*
-    double total_residual_time = 0.0;   //residual time across all physics
-    for (auto& n : residuals_time)
-      total_residual_time += n;
+ 
+    double combined_time, residuals_time_weight, hypre_time_weight; 
+    double total_EXA_numerator = 0.0;
+    double EXA_numerator;               //numerator for every physics
 
-    double total_hypre_time = 0.0;      //hypre time across all physics
-    for (auto& n : hypre_time)
-      total_hypre_time += n;
-  */
+    for(int mp_id = 0; mp_id<mp.physicsno; mp_id++) {
   
-    std::vector<double> EXA_Numerator(perTimestep_EXA_metric.size());  //Numerator for every physics
-    for (size_t phys = 0; phys < perTimestep_EXA_metric.size(); phys++){
-  
-      //double total_combined_time = total_residual_time + total_hypre_time;
+      combined_time = residuals_time[mp_id] + hypre_time[mp_id];
+      residuals_time_weight = residuals_time[mp_id] / combined_time;
+      hypre_time_weight = hypre_time[mp_id] / combined_time;
       
-      double total_combined_time = residuals_time[phys] + hypre_time[phys];
-      EXA_Numerator[phys] = (residuals_time[phys] / total_combined_time) * perTimestep_EXA_metric[phys] +
-                                (hypre_time[phys] / total_combined_time) * dof_EXA_metric[phys];
+      EXA_numerator = residuals_time_weight * ODE_EXA_metric[mp_id] 
+                        + hypre_time_weight * dof_EXA_metric[mp_id];
 
-      if (opts->print_EXA == 2){
-        PGFEM_printf("Physics %d residuals_time ratio: %f\n", phys, residuals_time[phys] / total_combined_time);
-        PGFEM_printf("Physics %d hypre_time ratio: %f\n", phys, hypre_time[phys] / total_combined_time);
-        PGFEM_printf("Physics %d number of DOF computations: %ld\n", phys, dof_EXA_metric[phys]);
-        PGFEM_printf("Physics %d EXA metric numerator: %f\n\n", phys, EXA_Numerator[phys]);
+      if (opts->print_EXA == 2) {
+        PGFEM_printf("Physics %d residuals_time weight: %f\n", mp_id, residuals_time_weight);
+        PGFEM_printf("Physics %d hypre_time weight: %f\n", mp_id, hypre_time_weight);
+        PGFEM_printf("Physics %d number of ODE computations: %ld\n", mp_id, ODE_EXA_metric[mp_id]);
+        PGFEM_printf("Physics %d number of DOF computations: %ld\n", mp_id, dof_EXA_metric[mp_id]);
+        PGFEM_printf("Physics %d EXA metric numerator: %f\n\n", mp_id, EXA_numerator);
       }
+ 
+      total_EXA_numerator += EXA_numerator; 
     }
 
-    double total_EXA_Numerator = 0;
-    for (auto& n : EXA_Numerator)
-      total_EXA_Numerator += n;
-    if (opts->print_EXA == 2) PGFEM_printf("Final EXA metric numerator: %f\n", total_EXA_Numerator);
+    double EXA_denominator = total_time * nproc;
+
+    if (opts->print_EXA == 2) {
+      PGFEM_printf("Final EXA metric numerator: %f\n", total_EXA_numerator);
+      PGFEM_printf("Final EXA metric denominator: %f\n", EXA_denominator);
+    }
     
-    PGFEM_printf("Total number of processes: %d\n", nproc);
-    
-    double EXA_Denominator = total_time * nproc;
-    PGFEM_printf("\nFinal EXA metric: %f\n\n", total_EXA_Numerator/EXA_Denominator);
+    PGFEM_printf("\nFinal EXA metric: %f\n\n", total_EXA_numerator/EXA_denominator);
   }
 }
 
@@ -511,7 +509,7 @@ int single_scale_main(int argc,char *argv[])
   err += read_multiphysics_settings(mp,&options,myrank);
 
   //set size for exa metrics
-  perTimestep_EXA_metric.resize(mp.physicsno);
+  ODE_EXA_metric.resize(mp.physicsno);
   dof_EXA_metric.resize(mp.physicsno);
 
   // Create the desired network
@@ -1420,7 +1418,7 @@ int single_scale_main(int argc,char *argv[])
 
   /* print EXA_metrics */
   if (options.print_EXA)
-    print_EXA_metrics(nproc, myrank, hypre_time, residuals_time, total_time, &options);
+    print_EXA_metrics(mp, nproc, myrank, hypre_time, residuals_time, total_time, &options);
 
   err += destruct_multiphysics(mp);
   PGFEM_finalize_io();
