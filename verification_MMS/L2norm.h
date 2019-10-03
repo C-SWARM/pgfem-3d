@@ -17,7 +17,7 @@ using namespace multiscale::net;
 #endif
 
 double AnalyticalTemperature(const double t, const double x, const double y, const double z){
-  return exp(t)*sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z);
+  return exp(-t)*sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z);
 }
 
 void compute_L2_Thermal(double *GL2_err, 

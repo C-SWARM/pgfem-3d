@@ -373,6 +373,20 @@ read_VTK_file4TF(char fn[], double *r, double *P, double *V)
     }
   }
   //**************************************************************
+  
+  //********************* Print out displacement data ***********
+  //  vtkPointData *pData = grid->GetPointData(); --This is already initialized above
+  if(pData->HasArray("Temperature"))
+  {
+    vtkDataArray *Temperature = pData->GetArray("Temperature");
+    nelems = Temperature->GetNumberOfTuples();
+    for(int i = 0; i < nelems; i++)
+    {
+      temp = Temperature->GetTuple(i);
+      r[i] = temp[0];
+    }
+  }
+  //**************************************************************
 
   if(cData->HasArray("TF_Pressure"))
   {
