@@ -75,12 +75,16 @@ int main(int argc,char *argv[])
 
 
   int in_err = 0;
-  int physicsno = 1;
-  int ndim = 3;
+
+  
+  Multiphysics mp;
+  read_multiphysics_settings(mp, &options, myrank); 
+  char *p = mp.physicsname[0];
+
+  int physicsno = mp.physicsno;
+  int ndim = mp.ndim[0];
   int fv_ndofn = ndim;
   
-  char physicsname[1024] = "Mechanical";
-  char *p = physicsname;
   in_err = read_input_file(&options,com,&nn,&Gnn,&ndofn,
                            &ne,&ni,&err,&limit,&nmat,&nc,&np,&node,
                            &elem,&mater,&matgeom,&sup,&nln,&znod,
@@ -139,6 +143,11 @@ int main(int argc,char *argv[])
   }  
   
   CHECK_SCANF(fp,"%lf %ld %ld %ld", &nor_min,&iter_max,&npres,&FNR);
+  
+  int tmp[4] = {};
+  if(FNR==4)
+    CHECK_SCANF(fp,"%ld %ld %ld %d", tmp+0, tmp+1, tmp+2, tmp+3);
+
   CHECK_SCANF(fp,"%ld", &nt);
 
   /* Compute times */
@@ -195,7 +204,11 @@ int main(int argc,char *argv[])
       sprintf(filename,"%s/VTK/STEP_%.6d/%s_%d_%d.vtu",options.opath,tim,options.ofname,myrank,tim);
       read_VTK_file4TF(filename, u,Ph,Vh);
 
-      compute_L2_error(err, elem, ne, node, u, Ph, Vh, times[tim+1], com, &options, hommat, is4cm);
+      if(mp.physics_ids[0] == MULTIPHYSICS_MECHANICAL)
+        compute_L2_Mechanical_MMS(err, elem, ne, node, u, Ph, Vh, times[tim+1], com, &options, hommat, is4cm);
+
+      if(mp.physics_ids[0] == MULTIPHYSICS_THERMAL)
+        compute_L2_Thermal(err, elem, ne, node, u, times[tim+1], com);
 
       if(myrank==0)
       {

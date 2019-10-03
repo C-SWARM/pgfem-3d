@@ -16,7 +16,49 @@ using namespace multiscale::net;
 #define M_PI 3.14159265358979323846
 #endif
 
-void compute_L2_error(double *GL2_err, Element *elem, long ne, Node *node, double* r,
+double AnalyticalTemperature(const double t, const double x, const double y, const double z){
+  return exp(t)*sin(M_PI*x)*sin(M_PI*y)*sin(M_PI*z);
+}
+
+void compute_L2_Thermal(double *GL2_err, 
+                        Element *elem,
+                        long ne,
+                        Node *node,
+                        double* r,
+                        double t, 
+                        const pgfem3d::CommunicationStructure *com)
+{
+  double L2_err = 0.0;
+  *GL2_err = 0.0;
+  
+  for(long e = 0; e<ne; e++)
+  {    
+    FEMLIB fe(e,elem,node, 1, 1);
+
+    for(int ip = 0; ip<fe.nint; ip++)
+    {
+      fe.elem_basis_V(ip);
+
+      double x_ip = fe.x_ip(0);
+      double y_ip = fe.x_ip(1);
+      double z_ip = fe.x_ip(2);
+
+      double T = AnalyticalTemperature(t, x_ip, y_ip, z_ip);
+      double Th = 0.0;
+
+      for(long a = 0; a<fe.nne; a++)
+        Th += fe.N(a)*r[fe.node_id(a)];
+
+      double dT = T - Th;
+
+      L2_err += dT*dT*fe.detJxW;
+    }
+  }
+
+  com->net->allreduce(&L2_err,GL2_err,1,NET_DT_DOUBLE,NET_OP_SUM,com->comm);
+}
+
+void compute_L2_Mechanical_MMS(double *GL2_err, Element *elem, long ne, Node *node, double* r,
 		      double *Ph, double *Vh, double t,
 		      const pgfem3d::CommunicationStructure *com,
 		      const PGFem3D_opt *opts, const HOMMAT *hommat,
