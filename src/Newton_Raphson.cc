@@ -408,7 +408,7 @@ double compute_residuals_for_NR(long *INFO,
                                 Solver *sol,
                                 LoadingSteps *load,
                                 CRPL *crpl,
-				const CommunicationStructure *com,
+                                const CommunicationStructure *com,
                                 const PGFem3D_opt *opts,
                                 const Multiphysics& mp,
                                 int mp_id,
@@ -593,20 +593,19 @@ int update_values_for_next_NR(Grid *grid,
          break;
         case CM:
         case CM3F:
-          {
-            switch(opts->cm)
-            {
-             case HYPER_ELASTICITY: case DISP:
+        {
+          switch(opts->cm){
+            case HYPER_ELASTICITY: case DISP:
               DISP_increment(grid->element,grid->ne,grid->node,grid->nn,fv->ndofn,load->sups[mp_id],fv->eps,
                              fv->sig,mat->hommat,fv->d_u,fv->u_np1,com,mp_id);
               break;
-             case CRYSTAL_PLASTICITY: case BPA_PLASTICITY: case TESTING:
-              /* updated later... */
+            case CRYSTAL_PLASTICITY: case BPA_PLASTICITY: case TESTING:
+             /* updated later... */
               break;
-             default: assert(0 && "undefined CM type"); break;
-            }
-            break;
+            default: assert(0 && "undefined CM type"); break;
           }
+          break;
+        }
         default: break;
        }
        break;
@@ -877,6 +876,40 @@ long Newton_Raphson_with_LS(double *solve_time,
 
   double dt = dts[DT_NP1];
   double t = times[tim+1];
+  
+  // do Taylor updates
+  if(sol->FNR == 5){
+    double *F = load->sups[mp_id]->defl_d;
+    double X[3] = {};
+    double u[3] = {};
+    for(int n = 0; n<grid->nn; ++n) {
+      X[0] = grid->node[n].x1;
+      X[1] = grid->node[n].x2;
+      X[2] = grid->node[n].x3;
+  
+      u[0] = F[0]*X[0] + F[1]*X[1] + F[2]*X[2];
+      u[1] = F[3]*X[0] + F[4]*X[1] + F[5]*X[2];
+      u[2] = F[6]*X[0] + F[7]*X[1] + F[8]*X[2];
+      
+      for(int ia=0; ia<fv->ndofn; ++ia){
+        int II = grid->node[n].id_map[0].id[ia];
+        if (II > 0)
+          fv->f[II-1] = fv->dd_u[II-1] = fv->d_u[II-1] = u[ia];
+      }
+    }
+    
+    *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,
+                                                    com,opts,mp,mp_id,t,dts, 0);
+                                                    
+    if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
+    {
+      // check from constitutive mode
+      if(opts->analysis_type == CM || opts->analysis_type == CM3F)
+        cm_get_subdivision_parameter(alpha, grid->ne, grid->element, fv->eps, dt);
+
+    }  
+    return INFO;
+  }      
 
   int iter = 0;
   int myrank = com->rank;

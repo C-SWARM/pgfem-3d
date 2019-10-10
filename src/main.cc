@@ -915,6 +915,9 @@ int single_scale_main(int argc,char *argv[])
 
           if(sol[ia].arc->ARC == 1)
             PGFEM_printf ("ARC-LENGTH METHOD - Simo\n");
+         case 5:
+            PGFEM_printf ("TAYLOR MODEL");
+
           break;
         }
       }
@@ -1196,8 +1199,8 @@ int single_scale_main(int argc,char *argv[])
         }
       }
 
-      /*=== NEWTON RAPHSON ===*/
-      if(sol[0].FNR == 0 || sol[0].FNR == 1)
+      // Newton Raphson or Taylor method
+      if(sol[0].FNR == 0 || sol[0].FNR == 1 || sol[0].FNR == 5)
       {
         //----------------------------------------------------------------------
         // file pointer (solver file) is active and used to update loads increments
