@@ -177,37 +177,6 @@ return high_norm;
 }
 
 
-//defl = gradU, so U = x - X 
-////F = gradU + 1
-////U = F(x - X)
-//compute cohesive interface job via Taylor method
-void ms_cohe_job_tm(MultiscaleCommon *c, MULTISCALE_SOLUTION *s,int myrank) {
-  double x,y,z,X,Y,Z;
-  int nn =  c->nn;
-  int nsd = 3; //from constitutive_model:1550
-    for(int n = 0;n<nn; n++) {
-      X = c->node[n].x1;
-      Y = c->node[n].x2;
-      Z = c->node[n].x3;
-      x = (c->supports->defl[0] + 1.0)*X + c->supports->defl[1]*Y + c->supports->defl[2]*Z;
-      y = c->supports->defl[3]*X + (c->supports->defl[4] + 1.0)*Y + c->supports->defl[5]*Z;
-      z = c->supports->defl[6]*X + c->supports->defl[7]*Y + (c->supports->defl[8] + 1.0)*Z;
-      for(int a=0;a<nsd;a++) {
-        int II = c->node[n].id_map[0].id[a]; //mp_id = mech only for now
-        if (II > 0){
-          if (a == 0)       s->r[II-1] = x - X;
-          else if (a == 1)  s->r[II-1] = y - Y;
-          else if (a == 2)  s->r[II-1] = z - Z;
-        }
-      }
-    }
-}
-
-
-
-
-
-
 /*==== API FUNCTION DEFINITIONS ====*/
 
 /** Given a microscale job, compute the solution on the time
@@ -219,7 +188,6 @@ int compute_ms_cohe_job(const int job_id,
 {
   int err = 0;
   const int print_level = 1;
-  int high_norm;
   MultiscaleCommon *common = microscale;
   MULTISCALE_SOLUTION *sol = microscale->sol + job_id;
 
@@ -262,31 +230,7 @@ int compute_ms_cohe_job(const int job_id,
                    p_job->tim,sol->times[sol->tim+1],sol->dt);
     }
 
-
-//1 -> nr
-//0 -> tm
-    if(microscale->opts->auto_micro) {
-      high_norm = find_norm(common,sol,myrank);
-      if(high_norm) {
-        err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id);
-      } else {
-        ms_cohe_job_tm(common,sol,myrank);
-      }
-    }
-//1 -> nr
-////0 -> tm
-    if(microscale->opts->custom_micro) {
-      int simulation_method = microscale->opts->methods[p_job->elem_id + common->nce*0]; // using 0th time step for now
-
-      if (simulation_method){
-        err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id); //nr = Newton Raphson
-      } else {
-        ms_cohe_job_tm(common,sol,myrank); //tm = Taylor model
-      }
-    } else {
-      err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id); //always newton raphson (full pde)
-    }
-
+    err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id);
 
     /*=== INTENTIONAL DROP THROUGH ===*/
    case JOB_NO_COMPUTE_EQUILIBRIUM:
