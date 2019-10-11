@@ -42,6 +42,9 @@
 #include "condense.h"
 #include "new_potentials.h"
 
+int phys_id;
+vector<double> ode_time;
+
 using namespace pgfem3d;
 
 static constexpr int       DIM_3 = 3;
@@ -1105,6 +1108,8 @@ Constitutive_model::run_integration_algorithm(double *tFnp1_in,
                                               int is_it_couple_w_thermal,
                                               double tf_factor)
 {
+  double func_time = -CLOCK();
+
   int err = 0;
   TensorA<2> tFnp1(tFnp1_in);
   Tensor<2> Fnp1 = tf_factor*tFnp1(i,j);
@@ -1119,6 +1124,7 @@ Constitutive_model::run_integration_algorithm(double *tFnp1_in,
   else
     err += param->integration_algorithm(this,cm_ctx); // perform integration algorithm
 
+  ode_time[phys_id] += (CLOCK() + func_time);
   return err;
 }
 

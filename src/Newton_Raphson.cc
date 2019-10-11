@@ -1259,6 +1259,7 @@ long Newton_Raphson_with_LS(double *solve_time,
       }
     }
 
+    phys_id = mp_id;  // this global variable requires for ode_time calculation
     //EXA metric computation
     if (opts->print_EXA){
       long global_ODE_EXA_metric = 0;
@@ -2672,7 +2673,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
   int iterno = 0;
 
   int myrank = COM[0].rank;
-  
+
   // if too siff to converge, try pre compute resiudal by perturbing displacement
   // slightly
   if(time_steps->tim==0)
@@ -2701,7 +2702,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
     perform_Newton_Raphson_with_subdivision(&solve_time,&stiffmat_loc_time,&residuals_loc_time,
                                             print_level,&is_NR_cvg,&alpha,grid,mat,FV,SOL,load,
                                             COM,time_steps,crpl,VVolume,opts,mp,&NR_t,0);
-
+    phys_id = 0;  // this global variable requires for ode_time calculation
     hypre_time[0] += solve_time;
     stiffmat_time[0] += stiffmat_loc_time;
     residuals_time[0] += residuals_loc_time;

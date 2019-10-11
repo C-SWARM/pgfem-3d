@@ -184,7 +184,8 @@ void print_EXA_metrics(const Multiphysics& mp,
         PGFEM_printf("Physics %d hypre_time weight: %f\n", mp_id, hypre_time_weight);
         PGFEM_printf("Physics %d number of ODE computations: %ld\n", mp_id, ODE_EXA_metric[mp_id]);
         PGFEM_printf("Physics %d number of DOF computations: %ld\n", mp_id, dof_EXA_metric[mp_id]);
-        PGFEM_printf("Physics %d EXA metric numerator: %f\n\n", mp_id, EXA_numerator);
+        PGFEM_printf("Physics %d EXA metric numerator: %f\n", mp_id, EXA_numerator);
+        PGFEM_printf("Physics %d ODE time: %f\n\n", mp_id, ode_time[mp_id]);
       }
  
       total_EXA_numerator += EXA_numerator; 
@@ -511,6 +512,7 @@ int single_scale_main(int argc,char *argv[])
   //set size for exa metrics
   ODE_EXA_metric.resize(mp.physicsno);
   dof_EXA_metric.resize(mp.physicsno);
+  ode_time.resize(mp.physicsno);
 
   // Create the desired network
   Network *net = multiscale::net::Network::Create(NET_DEFAULT);
