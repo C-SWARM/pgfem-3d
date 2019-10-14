@@ -144,7 +144,10 @@ int print_PGFem3D_final(const Multiphysics& mp,
   {
     PGFEM_printf("%s::Hypre solve time          = %f\n", mp.physicsname[mp_id], hypre_time[mp_id]);
     PGFEM_printf("%s::Stiffmat compute time     = %f\n", mp.physicsname[mp_id], stiffmat_time[mp_id]);
-    PGFEM_printf("%s::Residualvec compute time  = %f\n\n", mp.physicsname[mp_id], residuals_time[mp_id]);
+    PGFEM_printf("%s::Residualvec compute time  = %f\n", mp.physicsname[mp_id], residuals_time[mp_id]);
+    PGFEM_printf("%s::ODE compute time          = %f\n", mp.physicsname[mp_id], ode_time[mp_id]);
+    PGFEM_printf("%s::PDE compute time          = %f\n\n", mp.physicsname[mp_id], 
+                     (hypre_time[mp_id] + stiffmat_time[mp_id] + residuals_time[mp_id]) - ode_time[mp_id]);
   }
 
   return err;
@@ -159,33 +162,33 @@ int print_PGFem3D_final(const Multiphysics& mp,
 void print_EXA_metrics(const Multiphysics& mp,
                        const int nproc,
                        const int myrank,
-                       std::vector<double> hypre_time,
-                       std::vector<double> residuals_time,
+                       std::vector<double> &hypre_time,
+                       std::vector<double> &stiffmat_time,
+                       std::vector<double> &residuals_time,
                        double total_time,
                        const PGFem3D_opt *opts)
 {
-  if (myrank == 0){
+  if (myrank == 0) {
  
-    double combined_time, residuals_time_weight, hypre_time_weight; 
+    double combined_time, pde_time, ode_time_weight, pde_time_weight; 
     double total_EXA_numerator = 0.0;
     double EXA_numerator;               //numerator for every physics
 
     for(int mp_id = 0; mp_id<mp.physicsno; mp_id++) {
-  
-      combined_time = residuals_time[mp_id] + hypre_time[mp_id];
-      residuals_time_weight = residuals_time[mp_id] / combined_time;
-      hypre_time_weight = hypre_time[mp_id] / combined_time;
+ 
+      combined_time = hypre_time[mp_id] + stiffmat_time[mp_id] + residuals_time[mp_id];
+      pde_time = combined_time - ode_time[mp_id];
+      ode_time_weight = ode_time[mp_id] / combined_time;
+      pde_time_weight = pde_time / combined_time;
       
-      EXA_numerator = residuals_time_weight * ODE_EXA_metric[mp_id] 
-                        + hypre_time_weight * dof_EXA_metric[mp_id];
+      EXA_numerator = ode_time_weight * ODE_EXA_metric[mp_id] 
+                        + pde_time_weight * dof_EXA_metric[mp_id];
 
       if (opts->print_EXA == 2) {
-        PGFEM_printf("Physics %d residuals_time weight: %f\n", mp_id, residuals_time_weight);
-        PGFEM_printf("Physics %d hypre_time weight: %f\n", mp_id, hypre_time_weight);
-        PGFEM_printf("Physics %d number of ODE computations: %ld\n", mp_id, ODE_EXA_metric[mp_id]);
-        PGFEM_printf("Physics %d number of DOF computations: %ld\n", mp_id, dof_EXA_metric[mp_id]);
-        PGFEM_printf("Physics %d EXA metric numerator: %f\n", mp_id, EXA_numerator);
-        PGFEM_printf("Physics %d ODE time: %f\n\n", mp_id, ode_time[mp_id]);
+        PGFEM_printf("%s::ODE_time weight: %f\n", mp.physicsname[mp_id], ode_time_weight);
+        PGFEM_printf("%s::PDE_time weight: %f\n", mp.physicsname[mp_id], pde_time_weight);
+        PGFEM_printf("%s::Number of ODE: %ld\n", mp.physicsname[mp_id], ODE_EXA_metric[mp_id]);
+        PGFEM_printf("%s::Number of DOF: %ld\n\n", mp.physicsname[mp_id], dof_EXA_metric[mp_id]);
       }
  
       total_EXA_numerator += EXA_numerator; 
@@ -1420,7 +1423,8 @@ int single_scale_main(int argc,char *argv[])
 
   /* print EXA_metrics */
   if (options.print_EXA)
-    print_EXA_metrics(mp, nproc, myrank, hypre_time, residuals_time, total_time, &options);
+    print_EXA_metrics(mp, nproc, myrank, hypre_time, stiffmat_time, residuals_time, 
+                      total_time, &options);
 
   err += destruct_multiphysics(mp);
   PGFEM_finalize_io();
