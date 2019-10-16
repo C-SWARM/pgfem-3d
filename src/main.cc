@@ -142,12 +142,21 @@ int print_PGFem3D_final(const Multiphysics& mp,
 
   for(int mp_id = 0; mp_id<mp.physicsno; mp_id++)
   {
-    PGFEM_printf("%s::Hypre solve time          = %f\n", mp.physicsname[mp_id], hypre_time[mp_id]);
-    PGFEM_printf("%s::Stiffmat compute time     = %f\n", mp.physicsname[mp_id], stiffmat_time[mp_id]);
-    PGFEM_printf("%s::Residualvec compute time  = %f\n", mp.physicsname[mp_id], residuals_time[mp_id]);
-    PGFEM_printf("%s::ODE compute time          = %f\n", mp.physicsname[mp_id], ode_time[mp_id]);
-    PGFEM_printf("%s::PDE compute time          = %f\n\n", mp.physicsname[mp_id], 
+    PGFEM_printf("%s::Hypre solve time         = %f\n", mp.physicsname[mp_id], hypre_time[mp_id]);
+    PGFEM_printf("%s::Stiffmat compute time    = %f\n", mp.physicsname[mp_id], stiffmat_time[mp_id]);
+    PGFEM_printf("%s::Residualvec compute time = %f\n", mp.physicsname[mp_id], residuals_time[mp_id]);
+    PGFEM_printf("%s::ODE compute time         = %f\n", mp.physicsname[mp_id], ode_time[mp_id]);
+    //PGFEM_printf("%s::PDE compute time         = %f\n\n", mp.physicsname[mp_id], 
+    //                 (hypre_time[mp_id] + stiffmat_time[mp_id] + residuals_time[mp_id]) - ode_time[mp_id]);
+    if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL) {
+      PGFEM_printf("%s::PDE compute time         = %f\n\n", mp.physicsname[mp_id], 
                      (hypre_time[mp_id] + stiffmat_time[mp_id] + residuals_time[mp_id]) - ode_time[mp_id]);
+    }
+    if(mp.physics_ids[mp_id] == MULTIPHYSICS_THERMAL) {
+      PGFEM_printf("%s::PDE compute time         = %f\n\n", mp.physicsname[mp_id], 
+                     (hypre_time[mp_id] + stiffmat_time[mp_id] + residuals_time[mp_id]));
+    }
+
   }
 
   return err;
