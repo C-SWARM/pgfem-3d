@@ -2927,6 +2927,7 @@ double Newton_Raphson_multiscale(const int print_level,
     mp.coupled_ids.push_back(coupled_ids);
     mp.total_write_no = MECHANICAL_Var_NO;
   }
+  ode_time.resize(mp.physicsno);
 
   // initialize and define mesh object
   Grid grid;

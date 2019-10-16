@@ -42,7 +42,7 @@
 #include "condense.h"
 #include "new_potentials.h"
 
-vector<double> ode_time;
+vector<double> ode_time; //its size is declared in single_scale_main and Newton_Raphson_multiscale
 
 using namespace pgfem3d;
 
