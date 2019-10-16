@@ -1259,7 +1259,6 @@ long Newton_Raphson_with_LS(double *solve_time,
       }
     }
 
-    phys_id = mp_id;  // this global variable requires for ode_time calculation
     //EXA metric computation
     if (opts->print_EXA){
       long global_ODE_EXA_metric = 0;
@@ -1267,7 +1266,7 @@ long Newton_Raphson_with_LS(double *solve_time,
       if (myrank == 0){
         if (opts->print_EXA == 2){
           PGFEM_printf ("ODE operations: (%ld)\n", global_ODE_EXA_metric);
-          PGFEM_printf ("DoFs (fv->Gndof * # of ITs): %d * %d = %ld\n", fv->Gndof, BS_iter+1, fv->Gndof * (BS_iter+1);
+          PGFEM_printf ("DoFs (fv->Gndof * # of ITs): %d * %d = %ld\n", fv->Gndof, BS_iter+1, fv->Gndof * (BS_iter+1));
         }
         ODE_EXA_metric[mp_id] += global_ODE_EXA_metric;          //accumulate exascale metrics per NR iteration
         dof_EXA_metric[mp_id] += fv->Gndof * (BS_iter+1);
@@ -2702,7 +2701,7 @@ void Multiphysics_Newton_Raphson(std::vector<double> &hypre_time,
     perform_Newton_Raphson_with_subdivision(&solve_time,&stiffmat_loc_time,&residuals_loc_time,
                                             print_level,&is_NR_cvg,&alpha,grid,mat,FV,SOL,load,
                                             COM,time_steps,crpl,VVolume,opts,mp,&NR_t,0);
-    phys_id = 0;  // this global variable requires for ode_time calculation
+    
     hypre_time[0] += solve_time;
     stiffmat_time[0] += stiffmat_loc_time;
     residuals_time[0] += residuals_loc_time;

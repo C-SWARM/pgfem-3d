@@ -838,6 +838,7 @@ class Constitutive_model
                                 double alpha,
                                 const double *x,
                                 const double t,
+                                int mp_id,
                                 int is_it_couple_w_thermal = 0,
                                 double tf_factor = 1.0);
 };

@@ -185,10 +185,10 @@ void print_EXA_metrics(const Multiphysics& mp,
                         + pde_time_weight * dof_EXA_metric[mp_id];
 
       if (opts->print_EXA == 2) {
-        PGFEM_printf("%s::ODE_time weight: %f\n", mp.physicsname[mp_id], ode_time_weight);
-        PGFEM_printf("%s::PDE_time weight: %f\n", mp.physicsname[mp_id], pde_time_weight);
-        PGFEM_printf("%s::Number of ODE: %ld\n", mp.physicsname[mp_id], ODE_EXA_metric[mp_id]);
-        PGFEM_printf("%s::Number of DOF: %ld\n\n", mp.physicsname[mp_id], dof_EXA_metric[mp_id]);
+        PGFEM_printf("%s::ODE time weight: %f\n", mp.physicsname[mp_id], ode_time_weight);
+        PGFEM_printf("%s::PDE time weight: %f\n", mp.physicsname[mp_id], pde_time_weight);
+        PGFEM_printf("%s::ODE number in EXA metric: %ld\n", mp.physicsname[mp_id], ODE_EXA_metric[mp_id]);
+        PGFEM_printf("%s::DOF number in EXA metric: %ld\n\n", mp.physicsname[mp_id], dof_EXA_metric[mp_id]);
       }
  
       total_EXA_numerator += EXA_numerator; 

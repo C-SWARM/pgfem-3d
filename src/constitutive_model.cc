@@ -42,7 +42,6 @@
 #include "condense.h"
 #include "new_potentials.h"
 
-int phys_id;
 vector<double> ode_time;
 
 using namespace pgfem3d;
@@ -815,7 +814,7 @@ template <class CM> class ConstitutiveModelIntregrate
           else{
             double tf_factor = pow(theta_r*theta_n/tJ, 1.0/3.0);
             err += m->run_integration_algorithm(Fs.F.np1.data,hF->n.data,hF->np1.data,
-                                                dts,alpha,fe->x_ip.m_pdata, t, is_it_couple_w_thermal, tf_factor);
+                                                dts,alpha,fe->x_ip.m_pdata, t, mp_id, is_it_couple_w_thermal, tf_factor);
           }
         }
         if(err>0)
@@ -1105,6 +1104,7 @@ Constitutive_model::run_integration_algorithm(double *tFnp1_in,
                                               double alpha,
                                               const double *x,
                                               const double t,
+                                              int mp_id,
                                               int is_it_couple_w_thermal,
                                               double tf_factor)
 {
@@ -1124,7 +1124,7 @@ Constitutive_model::run_integration_algorithm(double *tFnp1_in,
   else
     err += param->integration_algorithm(this,cm_ctx); // perform integration algorithm
 
-  ode_time[phys_id] += (CLOCK() + func_time);
+  ode_time[mp_id] += (CLOCK() + func_time);
   return err;
 }
 
@@ -2884,7 +2884,7 @@ int residuals_el_constitutive_model_w_inertia_1f(FEMLIB *fe,
 
     // perform integration algorithm
     if(sol->run_integration_algorithm)
-      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts,alpha,fe->x_ip.m_pdata,t,is_it_couple_w_thermal);
+      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts,alpha,fe->x_ip.m_pdata,t,mp_id,is_it_couple_w_thermal);
 
     if(err!=0)
       break;
@@ -3133,7 +3133,7 @@ int residuals_el_constitutive_model_w_inertia_3f(FEMLIB *fe,
         ++err;
       else{
         double tf_factor = pow(theta/tJ, 1.0/3.0);
-        err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts,alpha,fe->x_ip.m_pdata,t,is_it_couple_w_thermal, tf_factor);
+        err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts,alpha,fe->x_ip.m_pdata,t,mp_id,is_it_couple_w_thermal,tf_factor);
       }
     }
 
@@ -3449,7 +3449,7 @@ int residuals_el_constitutive_model_1f(FEMLIB *fe,
 
     // perform integration algorithm
     if(sol->run_integration_algorithm)
-      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts,alpha,fe->x_ip.m_pdata,0.0,is_it_couple_w_thermal);
+      err += m->run_integration_algorithm(Fnp1.data,hFn.data,hFnp1.data,dts,alpha,fe->x_ip.m_pdata,0.0,mp_id,is_it_couple_w_thermal);
 
     if(err!=0)
       break;
