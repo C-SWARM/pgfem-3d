@@ -1267,10 +1267,10 @@ long Newton_Raphson_with_LS(double *solve_time,
       if (myrank == 0){
         if (opts->print_EXA == 2){
           PGFEM_printf ("ODE operations: (%ld)\n", global_ODE_EXA_metric);
-          PGFEM_printf ("DoFs (fv->Gndof * IT): %d * %d = %ld\n", fv->Gndof, BS_iter, fv->Gndof * BS_iter);
+          PGFEM_printf ("DoFs (fv->Gndof * # of ITs): %d * %d = %ld\n", fv->Gndof, BS_iter+1, fv->Gndof * (BS_iter+1);
         }
         ODE_EXA_metric[mp_id] += global_ODE_EXA_metric;          //accumulate exascale metrics per NR iteration
-        dof_EXA_metric[mp_id] += fv->Gndof * BS_iter;
+        dof_EXA_metric[mp_id] += fv->Gndof * (BS_iter+1);
       }
     }
     perIter_ODE_EXA_metric = 0;                                 //reset ODE operation counter
