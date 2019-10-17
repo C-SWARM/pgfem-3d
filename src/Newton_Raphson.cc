@@ -873,13 +873,18 @@ long Newton_Raphson_with_LS(double *solve_time,
 {
   long INFO = 0;
   *alpha = 0.0;
-
+  
   double dt = dts[DT_NP1];
   double t = times[tim+1];
   
   // do Taylor updates
-  if(sol->FNR == 5){
-    double *F = load->sups[mp_id]->defl_d;
+  if(sol->FNR == 5 && mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
+  {
+    double F[9] = {1.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,1.0};
+    double *dF  = load->sups[mp_id]->defl_d;
+    for(int ia=0; ia<9; ia++)
+      F[ia] = F[ia] + load->sups[mp_id]->defl[ia] + load->sups[mp_id]->defl_d[ia];
+    
     double X[3] = {};
     double u[3] = {};
     for(int n = 0; n<grid->nn; ++n) {
@@ -887,9 +892,9 @@ long Newton_Raphson_with_LS(double *solve_time,
       X[1] = grid->node[n].x2;
       X[2] = grid->node[n].x3;
   
-      u[0] = F[0]*X[0] + F[1]*X[1] + F[2]*X[2];
-      u[1] = F[3]*X[0] + F[4]*X[1] + F[5]*X[2];
-      u[2] = F[6]*X[0] + F[7]*X[1] + F[8]*X[2];
+      u[0] = dF[0]*X[0] + dF[1]*X[1] + dF[2]*X[2];
+      u[1] = dF[3]*X[0] + dF[4]*X[1] + dF[5]*X[2];
+      u[2] = dF[6]*X[0] + dF[7]*X[1] + dF[8]*X[2];
       
       for(int ia=0; ia<fv->ndofn; ++ia){
         int II = grid->node[n].id_map[0].id[ia];
@@ -898,18 +903,27 @@ long Newton_Raphson_with_LS(double *solve_time,
       }
     }
     
-    *residuals_loc_time += compute_residuals_for_NR(&INFO,grid,mat,fv,sol,load,crpl,
-                                                    com,opts,mp,mp_id,t,dts, 0);
-                                                    
-    if(mp.physics_ids[mp_id] == MULTIPHYSICS_MECHANICAL)
+    if(opts->analysis_type == CM || opts->analysis_type == CM3F)
     {
+      for(long eid=0; eid<grid->ne; eid++)
+      {
+        long nne = grid->element[eid].toe;
+        long nint = 0;
+        int_point(nne, &nint);
+        for(int ip=0; ip<nint; ++ip){
+          Constitutive_model *m = &(fv->eps[eid].model[ip]);
+          CM_Ctx cm_ctx;
+          cm_ctx.set_tensors_ss(F,NULL,NULL,false);
+          cm_ctx.set_time_steps_ss(dts[DT_NP1],dts[DT_N]);
+          m->param->integration_algorithm(m, cm_ctx);
+        }
+      }
       // check from constitutive mode
-      if(opts->analysis_type == CM || opts->analysis_type == CM3F)
-        cm_get_subdivision_parameter(alpha, grid->ne, grid->element, fv->eps, dt);
-
+      cm_get_subdivision_parameter(alpha, grid->ne, grid->element, fv->eps, dt);
     }  
+
     return INFO;
-  }      
+  }    
 
   int iter = 0;
   int myrank = com->rank;
