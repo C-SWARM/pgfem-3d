@@ -510,8 +510,6 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
                                            int total_Lagrangian)
 
 {
-  double func_time = -CLOCK();
-
   int err = 0;
   double Jn = 1.0; // Total Lagrangian = 1.0; // it is updated if mechanical is coupled.
 
@@ -646,7 +644,6 @@ int energy_equation_compute_residuals_elem(FEMLIB *fe,
     }
   }
 
-  ode_time[mp_id] += (CLOCK() + func_time);
   return err;
 }
 
