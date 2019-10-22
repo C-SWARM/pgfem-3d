@@ -31,7 +31,9 @@ struct SOLVER_FILE {
 enum {UNDEFINED_METHOD = -1, /**< gives overflow on assignment to nonlin_method */
       NEWTON_METHOD = 1,
       ARC_LENGTH_METHOD = 2,
-      AUX_ARC_LENGTH_METHOD = 3};
+      AUX_ARC_LENGTH_METHOD = 3,
+      MULTIPHYSICS_NEWTON_METHOD = 4,
+      TAYLOR_MODEL = 5};
 
 void solver_file_init_values(SOLVER_FILE *sf);
 

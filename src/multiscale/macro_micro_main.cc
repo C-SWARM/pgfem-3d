@@ -379,6 +379,14 @@ int multi_scale_main(int argc, char* argv[])
           PGFEM_printf ("\nNONLINEAR SOLVER : ARC-LENGTH METHOD - Simo\n");
         break;
 
+       case MULTIPHYSICS_NEWTON_METHOD:
+       PGFEM_printf ("\nNONLINEAR SOLVER : MULTIPHYSICS NEWTON METHOD\n");
+       break;
+       
+       case TAYLOR_MODEL:
+       PGFEM_printf ("\nNONLINEAR SOLVER : TAYLOR MODEL\n");
+       break;
+
        default:
         PGFEM_printerr("Undefined method! ABORT\n");
         PGFEM_Abort();

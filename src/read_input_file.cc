@@ -838,7 +838,11 @@ int read_solver_file_multiscale(MultiscaleCommon *c,
   err += read_solver_file(&ts, &mat, &fv, &sol, &load, crpl, mp, opts, myrank);
 
   /* assign the returned values */
+  c->maxit_nl = sol.iter_max;
+  c->nce = grid.nce;
+
   solver_file->nonlin_tol           = sol.nor_min;
+  solver_file->nonlin_method        = sol.FNR;
   solver_file->max_nonlin_iter      = sol.iter_max;
   solver_file->n_pressure_nodes     = fv.npres;
   solver_file->nonlin_method        = sol.FNR;
@@ -857,6 +861,12 @@ int read_solver_file_multiscale(MultiscaleCommon *c,
     solver_file->nonlin_method_opts[0] = sol.arc->dAL0;
     //solver_file->nonlin_method_opts[1] = sol.arc->dALMAX;
     break;
+
+   case MULTIPHYSICS_NEWTON_METHOD:
+    break;
+
+   case TAYLOR_MODEL:
+    break;      
   }
 
   free(physicsname);
