@@ -39,7 +39,7 @@ static int ms_cohe_job_nr(MultiscaleCommon *c,
                           MULTISCALE_SOLUTION *s,
                           const PGFem3D_opt *opts,
                           int *n_step,
-                          const int mp_id);
+                          const int mp_id,int tag_TP);
 
 /** Set the job supports appropriately from the jump at (n) and
     (n+1). Also set the normal to the interface. */
@@ -230,7 +230,26 @@ int compute_ms_cohe_job(const int job_id,
                    p_job->tim,sol->times[sol->tim+1],sol->dt);
     }
 
-    err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id);
+    /* consider file_.msm for PDE or Taylor */
+    if(microscale->opts->custom_micro) 
+    {
+      int tag_TP = microscale->opts->methods[p_job->elem_id + common->nce*0];
+      PGFEM_printf("\n ---> simulation_method=%ld", tag_TP);
+      
+      if (tag_TP)
+      {
+        PGFEM_printf("\n CUSTOM: ms_cohe_job_nr for PDE called!!! \n");
+        err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id, tag_TP);
+      } 
+      else {
+        PGFEM_printf("\n CUSTOM: ms_cohe_job_nr for Taylor called!!! \n");
+        err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id, tag_TP);
+      }
+    }  
+    //else {
+      //PGFEM_printf("\n No CUSTOM: NR default for PDE called!!! \n");
+      //err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id, 1); 
+    //}
 
     /*=== INTENTIONAL DROP THROUGH ===*/
    case JOB_NO_COMPUTE_EQUILIBRIUM:
@@ -344,7 +363,7 @@ int assemble_ms_cohe_job_res(const int job_id,
 static int ms_cohe_job_nr(MultiscaleCommon *c,
                           MULTISCALE_SOLUTION *s,
                           const PGFem3D_opt *opts,
-                          int *n_step,const int mp_id)
+                          int *n_step,const int mp_id,int tag_TP)
 {
   int err = 0;
   double pores = 0.0;
@@ -355,7 +374,7 @@ static int ms_cohe_job_nr(MultiscaleCommon *c,
   double *sup_defl = PGFEM_calloc(double, c->supports->npd);
   memcpy(sup_defl,c->supports->defl_d,c->supports->npd*sizeof(double));
 
-  Newton_Raphson_multiscale(print_level,c,s,NULL,NULL,opts,sup_defl,&pores,n_step);
+  Newton_Raphson_multiscale(print_level,c,s,NULL,NULL,opts,sup_defl,&pores,n_step,tag_TP);
 
   free(sup_defl);
   return err;

@@ -117,6 +117,6 @@ double Newton_Raphson_multiscale(const int print_level,
                                  const PGFem3D_opt *opts,
                                  double *sup_defl,
                                  double *pores,
-                                 int *n_step);
+                                 int *n_step, int tag_TP);
 
 #endif /* #define PGFEM3D_NEWTON_RAPHSON_H */

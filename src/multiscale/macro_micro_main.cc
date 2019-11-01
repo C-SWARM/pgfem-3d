@@ -531,8 +531,8 @@ int multi_scale_main(int argc, char* argv[])
 
         int n_step = 0;
 
-        // perform Newton Raphson iteration
-        hypre_time[mp_id] += Newton_Raphson_multiscale(1,c,s,solver_file,ctx,macro->opts,sup_defl,&pores,&n_step);
+        // perform Newton Raphson iteration (default PDE)
+        hypre_time[mp_id] += Newton_Raphson_multiscale(1,c,s,solver_file,ctx,macro->opts,sup_defl,&pores,&n_step,1);
 
         /* Null global vectors */
         for (int i=0;i<c->ndofd;i++){

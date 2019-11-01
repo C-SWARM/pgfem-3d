@@ -2946,7 +2946,7 @@ double Newton_Raphson_multiscale(const int print_level,
                                  const PGFem3D_opt *opts,
                                  double *sup_defl,
                                  double *pores,
-                                 int *n_step)
+                                 int *n_step, int tag_TP)
 {
   int mp_id = 0;
 
@@ -3018,17 +3018,26 @@ double Newton_Raphson_multiscale(const int print_level,
   /// initialize and define iterative solver object
   Solver sol{};
   {
-    if(solver_file==NULL)
+    if(solver_file==NULL && tag_TP==0) // taylor micro
     {
       sol.nor_min  = c->lin_err;
-      sol.FNR      = 1; // full NR
+      sol.FNR      = 5;
       sol.iter_max = c->maxit_nl;
+      PGFEM_printf("\n NR-multiscale (micro msmID=%ld) ---> Taylor FNR=%ld\n", tag_TP, sol.FNR);
     }
-    else
+    else if(solver_file==NULL && tag_TP==1) // pde micro
+    {
+      sol.nor_min  = c->lin_err;
+      sol.FNR      = 1;
+      sol.iter_max = c->maxit_nl;
+      PGFEM_printf("\n NR-multiscale (micro msmID=%ld) ---> pde FNR=%ld\n", tag_TP, sol.FNR);
+    }
+    else // macro pde
     {
       sol.nor_min  = solver_file->nonlin_tol;
       sol.FNR      = solver_file->nonlin_method;
       sol.iter_max = solver_file->max_nonlin_iter;
+      PGFEM_printf("\n NR-multiscale default macro ---> PDE FNR=%ld\n", sol.FNR);
     }
     sol.n_step     = *n_step;
     sol.system     = c->SOLVER;

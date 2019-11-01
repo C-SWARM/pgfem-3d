@@ -164,7 +164,7 @@ void MultiscaleCommon::build_common(const CommunicationStructure *com,
 
   /* initialize the solver information */
   SOLVER = nullptr;
-  maxit_nl = 5;
+  maxit_nl = 50;
 
   switch(opts->vis_format){
    case VIS_ENSIGHT: case VIS_VTK:
