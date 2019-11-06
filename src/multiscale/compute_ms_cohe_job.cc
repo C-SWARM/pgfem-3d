@@ -234,7 +234,7 @@ int compute_ms_cohe_job(const int job_id,
     if(microscale->opts->custom_micro) 
     {
       int tag_TP = microscale->opts->methods[p_job->elem_id + common->nce*0];
-      PGFEM_printf("\n ---> simulation_method=%ld", tag_TP);
+      PGFEM_printf("\n -->> msm.file used for simulation_method=%ld", tag_TP);
       
       if (tag_TP)
       {
@@ -246,10 +246,10 @@ int compute_ms_cohe_job(const int job_id,
         err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id, tag_TP);
       }
     }  
-    //else {
-      //PGFEM_printf("\n No CUSTOM: NR default for PDE called!!! \n");
-      //err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id, 1); 
-    //}
+    else {
+      PGFEM_printf("\n -->> NO msm.file: NR default for PDE called!!! \n");
+      err += ms_cohe_job_nr(common,sol,microscale->opts,&(p_job->n_step), mp_id, 1); 
+    }
 
     /*=== INTENTIONAL DROP THROUGH ===*/
    case JOB_NO_COMPUTE_EQUILIBRIUM:
