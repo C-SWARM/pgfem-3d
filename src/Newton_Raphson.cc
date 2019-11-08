@@ -1765,23 +1765,26 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
         double temp_defl[9];
         double newDt;
         double dt0 = NR_t->times[tim+1] - NR_t->times[0];
-      int DIV = sp.step_id;
-      int STEP = sp.step_size;
-      if (DIV == 0) {
-        if (tim > 0) {
-         ctx->macro->sol->times[ctx->macro->sol->tim - 1]  = ctx->macro->sol->times[ctx->macro->sol->tim];
+        int DIV = sp.step_id;
+        int STEP = sp.step_size;
+        if (DIV == 0) {
+          if (tim > 0) {
+            ctx->macro->sol->times[ctx->macro->sol->tim - 1]  = ctx->macro->sol->times[ctx->macro->sol->tim];
+          }
         }
-      }
-      if (STEP > 0) {
-        double dtFactor =  (NR_t->times[tim + 1] - ctx->macro->sol->times[ctx->macro->sol->tim - 1]) * (((double) DIV + 1.0)/((double) STEP));
-        ctx->macro->sol->times[ctx->macro->sol->tim + 1] = ctx->macro->sol->times[ctx->macro->sol->tim - 1] + dtFactor;
-        newDt = ctx->macro->sol->times[ctx->macro->sol->tim - 1] + dtFactor - ctx->macro->sol->times[ctx->macro->sol->tim];
-      } else {
-        ctx->macro->sol->times[ctx->macro->sol->tim + 1] = ctx->macro->sol->times[ctx->macro->sol->tim] + dt;
-        newDt = dt;
-      }
 
-
+        if (STEP > 0) {
+	  PGFEM_printf("\nIn microscale jobs: NR_t->times[tim+1] - NR_t->times[0] = %e - %e = %e", NR_t->times[tim+1], NR_t->times[0], dt0);
+          //const double dtFactor = 1.0e-05;// test ok!
+	  double dtFactor = (NR_t->times[tim + 1] - NR_t->times[0]) * (((double) DIV + 1.0)/((double) STEP)); // modified by TP to avoid Segmentation Fault
+	  //double dtFactor = (NR_t->times[tim + 1] - ctx->macro->sol->times[ctx->macro->sol->tim - 1]) * (((double) DIV + 1.0)/((double) STEP)); // old: --> Segmentation Fault
+          ctx->macro->sol->times[ctx->macro->sol->tim + 1] = dtFactor + NR_t->times[0]; //ctx->macro->sol->times[ctx->macro->sol->tim - 1];
+          newDt = ctx->macro->sol->times[ctx->macro->sol->tim - 1] + dtFactor - ctx->macro->sol->times[ctx->macro->sol->tim];
+	} 
+	else {
+          ctx->macro->sol->times[ctx->macro->sol->tim + 1] = ctx->macro->sol->times[ctx->macro->sol->tim] + dt;
+          newDt = dt;
+        }
         for (i = 0; i < sizeof(load->sup_defl[mp_id]) ; i++) {
           temp_defl[i] = load->sup_defl[mp_id][i];
           load->sup_defl[mp_id][i] = (newDt/(dt0))*load->sup_defl[mp_id][i];
@@ -1791,7 +1794,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
         pgf_FE2_macro_client_send_jobs(ctx->client,ctx->mscom,ctx->macro,
                                        JOB_UPDATE);
         for (i = 0; i < sizeof(load->sup_defl[mp_id]) ; i++) {
-         load->sup_defl[mp_id][i] = temp_defl[i];
+          load->sup_defl[mp_id][i] = temp_defl[i];
         }
       }
 
