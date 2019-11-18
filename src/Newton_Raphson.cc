@@ -1774,7 +1774,7 @@ void perform_Newton_Raphson_with_subdivision(double *solve_time,
         }
 
         if (STEP > 0) {
-	  PGFEM_printf("\nIn microscale jobs: NR_t->times[tim+1] - NR_t->times[0] = %e - %e = %e", NR_t->times[tim+1], NR_t->times[0], dt0);
+	  //PGFEM_printf("\nIn microscale jobs: NR_t->times[tim+1] - NR_t->times[0] = %e - %e = %e", NR_t->times[tim+1], NR_t->times[0], dt0);
           //const double dtFactor = 1.0e-05;// test ok!
 	  double dtFactor = (NR_t->times[tim + 1] - NR_t->times[0]) * (((double) DIV + 1.0)/((double) STEP)); // modified by TP to avoid Segmentation Fault
 	  //double dtFactor = (NR_t->times[tim + 1] - ctx->macro->sol->times[ctx->macro->sol->tim - 1]) * (((double) DIV + 1.0)/((double) STEP)); // old: --> Segmentation Fault
@@ -3026,21 +3026,21 @@ double Newton_Raphson_multiscale(const int print_level,
       sol.nor_min  = c->lin_err;
       sol.FNR      = 5;
       sol.iter_max = c->maxit_nl;
-      PGFEM_printf("\n NR-multiscale (micro msmID=%ld) ---> Taylor FNR=%ld\n", tag_TP, sol.FNR);
+      //PGFEM_printf("\n NR-multiscale (micro msmID=%ld) ---> Taylor FNR=%ld\n", tag_TP, sol.FNR);
     }
     else if(solver_file==NULL && tag_TP==1) // pde micro
     {
       sol.nor_min  = c->lin_err;
       sol.FNR      = 1;
       sol.iter_max = c->maxit_nl;
-      PGFEM_printf("\n NR-multiscale (micro msmID=%ld) ---> pde FNR=%ld\n", tag_TP, sol.FNR);
+      //PGFEM_printf("\n NR-multiscale (micro msmID=%ld) ---> pde FNR=%ld\n", tag_TP, sol.FNR);
     }
     else // macro pde
     {
       sol.nor_min  = solver_file->nonlin_tol;
       sol.FNR      = solver_file->nonlin_method;
       sol.iter_max = solver_file->max_nonlin_iter;
-      PGFEM_printf("\n NR-multiscale default macro ---> PDE FNR=%ld\n", sol.FNR);
+      //PGFEM_printf("\n NR-multiscale default macro ---> PDE FNR=%ld\n", sol.FNR);
     }
     sol.n_step     = *n_step;
     sol.system     = c->SOLVER;
