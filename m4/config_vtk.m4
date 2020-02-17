@@ -17,8 +17,11 @@
 AC_DEFUN([AM_PATH_VTK], [
  # Use the VTK paths to build some variables that we will need.
  vtk_cppflags="-I$with_vtk/include/vtk$with_vtk_version"
- vtk_ldflags="-L$with_vtk/lib -Wl,-rpath,$with_vtk/lib"
- vtk_libs="-lvtkIOXML$with_vtk_version -lvtkIOXMLParser$with_vtk_version -lvtkIOCore$with_vtk_version -lvtkCommonExecutionModel$with_vtk_version -lvtkCommonDataModel$with_vtk_version -lvtkCommonMisc$with_vtk_version -lvtkCommonSystem$with_vtk_version -lvtkCommonTransforms$with_vtk_version -lvtkCommonMath$with_vtk_version -lvtkIOGeometry$with_vtk_version -lvtkCommonCore$with_vtk_version -lvtksys$with_vtk_version"
+ vtk_ldflags="-L$with_vtk/lib64 -Wl,-rpath,$with_vtk/lib64"
+ # following works for vtk-6.0 
+ # vtk_libs="-lvtkIOXML$with_vtk_version -lvtkIOXMLParser$with_vtk_version -lvtkIOCore$with_vtk_version -lvtkCommonExecutionModel$with_vtk_version -lvtkCommonDataModel$with_vtk_version -lvtkCommonMisc$with_vtk_version -lvtkCommonSystem$with_vtk_version -lvtkCommonTransforms$with_vtk_version -lvtkCommonMath$with_vtk_version -lvtkIOGeometry$with_vtk_version -lvtkCommonCore$with_vtk_version -lvtksys$with_vtk_version"
+ # following works for vtk-8.2 
+ vtk_libs="-lvtkIOXML$with_vtk_version -lvtkIOXMLParser$with_vtk_version -lvtkIOCore$with_vtk_version -lvtkCommonExecutionModel$with_vtk_version -lvtkCommonDataModel$with_vtk_version -lvtkCommonMisc$with_vtk_version -lvtkCommonSystem$with_vtk_version -lvtkCommonTransforms$with_vtk_version -lvtkCommonMath$with_vtk_version -lvtkIOGeometry$with_vtk_version -lvtkCommonCore$with_vtk_version -lvtksys$with_vtk_version -lvtkexpat$with_vtk_version -lvtklz4$with_vtk_version -lvtklzma$with_vtk_version -lvtkzlib$with_vtk_version -lvtkdoubleconversion$with_vtk_version -lvtkIOLegacy$with_vtk_version -lvtkIOImage$with_vtk_version -lvtkDICOMParser$with_vtk_version -lvtkmetaio$with_vtk_version -lvtkjpeg$with_vtk_version -lvtkpng$with_vtk_version -lvtktiff$with_vtk_version"
 
  # Make sure that the vtk headers are found.
  AC_CHECK_FILE([$with_vtk/include/vtk$with_vtk_version/vtkVersionMacros.h], [found_vtk_headers=yes])
